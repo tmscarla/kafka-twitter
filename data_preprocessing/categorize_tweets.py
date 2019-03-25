@@ -83,9 +83,16 @@ if __name__=='__main__':
 
     tweets = df_dataset['text'].tolist()
 
+    columns = list(df_dataset).append('topic')
+    final_df = pd.DataFrame(columns=columns)
+
+    from operator import itemgetter # serve per prendere il topic con il valore più alto
+
     for new_doc in tweets:
         print(f'TWEET: {new_doc}')
         new_doc = prepare_text_for_lda(new_doc)
         new_doc_bow = dictionary.doc2bow(new_doc)
-        print(new_doc_bow)
-        print(ldamodel.get_document_topics(new_doc_bow))
+        l = ldamodel.get_document_topics(new_doc_bow)
+        print(l)
+        topic = topics[max(l,key=itemgetter(1))[0]][1]
+        print(topics[max(l,key=itemgetter(1))[0]][1])

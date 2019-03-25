@@ -68,7 +68,12 @@ if __name__=='__main__':
         nltk.download('wordnet')
         nltk.download('stopwords')
 
-    en_stop = set(nltk.corpus.stopwords.words('english'))
+
+    stopwords = nltk.corpus.stopwords.words('english')
+    my_stopwords = ['could', 'would', 'always', 'still', 'never', 'ever','literally','going']
+    for w in my_stopwords:
+        stopwords.append(my_stopwords)
+    en_stop = stopwords
     spacy.load('en')
     parser = English()
     text_data = []
