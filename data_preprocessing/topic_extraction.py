@@ -23,7 +23,10 @@ def tokenize(text):
         if token.orth_.isspace():
             continue
         elif token.like_url:
-            lda_tokens.append('URL')
+            #lda_tokens.append('URL')
+            pass
+        elif token.orth_.startswith('RT'):
+            pass
         elif token.orth_.startswith('@'):
             #lda_tokens.append('SCREEN_NAME')
             pass
@@ -73,22 +76,17 @@ if __name__=='__main__':
     #prepare the dataset in one large pandas dataframe
     COLUMN_NAMES = ['user', 'text', 'hashtags', 'mentions']
     dataset = pd.DataFrame(columns=COLUMN_NAMES)
-    path, dirs, files = next(os.walk(data_folder))
-    file_count = len(files)
-    print(file_count)
+
     files = pd.read_csv('data/twitter_dataset.csv', lineterminator='\n')
 
-    #f = pd.read_csv('data/twitter_dataset_1.csv')['text'].tolist()
-    #f = pd.concat(files)['text'].tolist()
     f = files['text'].tolist()
     count = 0
     for line in tqdm(f):
         count=count+1
         tokens = prepare_text_for_lda(line)
-        if random.random() > .50:
-            while 'SCREEN_NAME' in tokens:
-                tokens.remove('SCREEN_NAME')
-            #print('Tweet {}: \nLine: {} \nTokens:{}'.format(count,line,tokens))
+
+        while 'SCREEN_NAME' in tokens:
+            tokens.remove('SCREEN_NAME')
         text_data.append(tokens)
 
     #here the magic begins
