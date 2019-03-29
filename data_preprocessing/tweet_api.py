@@ -11,7 +11,7 @@ except OSError:
     pass
 
 def main():
-    old_df = pd.read_csv('data/twitter_dataset_1.csv', lineterminator='\n')
+    old_df = pd.read_csv('data/twitter_dataset_2.csv', lineterminator='\n')
     #first load the dictonary with the top used english words
     with open('improved_dict.txt') as d:
         word_list = d.read()
@@ -61,7 +61,7 @@ def main():
     df = pd.DataFrame(dict_)
 
     df = df.append(old_df)
-    df.to_csv('data/twitter_dataset_1.csv', index=False, encoding='utf-8')
+    df.to_csv('data/twitter_dataset_2.csv', index=False, encoding='utf-8')
 
 if __name__ == '__main__':
     main()

@@ -92,6 +92,12 @@ if __name__=='__main__':
 
         while 'SCREEN_NAME' in tokens:
             tokens.remove('SCREEN_NAME')
+        while 'would' in tokens:
+            tokens.remove('would')
+        while 'still' in tokens:
+            tokens.remove('still')
+        while 'ever' in tokens:
+            tokens.remove('ever')
         text_data.append(tokens)
 
     #here the magic begins
@@ -102,7 +108,7 @@ if __name__=='__main__':
     pickle.dump(corpus, open('corpus.pkl', 'wb'))
     dictionary.save('dictionary.gensim')
 
-    NUM_TOPICS = 20
+    NUM_TOPICS = 12
 
     ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word=dictionary, passes=15)
     ldamodel.save('model5.gensim')

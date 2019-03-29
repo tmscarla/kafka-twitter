@@ -95,4 +95,5 @@ if __name__=='__main__':
         l = ldamodel.get_document_topics(new_doc_bow)
         print(l)
         topic = topics[max(l,key=itemgetter(1))[0]][1]
-        print(topics[max(l,key=itemgetter(1))[0]][1])
+        topic_name = topic.split('"')[1::2][0]
+        print(topic_name)
