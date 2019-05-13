@@ -53,6 +53,12 @@ def prepare_text_for_lda(text):
     tokens = [get_lemma(token) for token in tokens]
     return tokens
 
+def tweet_cleaner(tweets):
+    new_tweets = []
+    for t in tqdm(tweets):
+        if ('@' not in t) and ('http' not in t):
+            new_tweets.append(t)
+    return new_tweets
 
 
 if __name__=='__main__':
@@ -85,8 +91,9 @@ if __name__=='__main__':
     files = pd.read_csv('data/twitter_dataset.csv', lineterminator='\n')
 
     f = files['text'].tolist()
+    tweets = tweet_cleaner(f)
     count = 0
-    for line in tqdm(f):
+    for line in tqdm(tweets):
         count=count+1
         tokens = prepare_text_for_lda(line)
 
@@ -98,6 +105,12 @@ if __name__=='__main__':
             tokens.remove('still')
         while 'ever' in tokens:
             tokens.remove('ever')
+        while 'every' in tokens:
+            tokens.remove('every')
+        while 'never' in tokens:
+            tokens.remove('never')
+        while 'first' in tokens:
+            tokens.remove('first')
         text_data.append(tokens)
 
     #here the magic begins
@@ -108,12 +121,13 @@ if __name__=='__main__':
     pickle.dump(corpus, open('corpus.pkl', 'wb'))
     dictionary.save('dictionary.gensim')
 
-    NUM_TOPICS = 12
+    NUM_TOPICS = 20
 
     ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = NUM_TOPICS, id2word=dictionary, passes=15)
     ldamodel.save('model5.gensim')
 
     topics = ldamodel.print_topics(num_words=1)
+    print(len(topics))
     for topic in topics:
         print(topic)
 
