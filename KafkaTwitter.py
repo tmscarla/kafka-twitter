@@ -3,6 +3,7 @@ from tkinter import font  as tkfont
 
 from HomePage import HomePage
 from LoginPage import LoginPage
+from WritePage import WritePage
 
 class KafkaTwitter(tk.Tk):
 
@@ -22,7 +23,7 @@ class KafkaTwitter(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (LoginPage, HomePage):
+        for F in (LoginPage, HomePage, WritePage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame

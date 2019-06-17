@@ -18,4 +18,5 @@ class HomePage(tk.Frame):
         print('Reading!')
 
     def _write(self):
-        print('Writing!')
+        print('Ok, write something!')
+        self.controller.show_frame("WritePage")
