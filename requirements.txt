@@ -1,0 +1,13 @@
+six==1.11.0
+gensim==3.7.1
+colorama==0.4.0
+appscript==1.1.0
+keyboard==0.13.3
+requests==2.21.0
+nltk==3.4
+spacy==2.0.18
+tqdm==4.31.1
+twython==3.7.0
+confluent_kafka==0.11.6
+pandas==0.23.4
+avro==1.9.0
