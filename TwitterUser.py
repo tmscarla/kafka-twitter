@@ -30,7 +30,10 @@ class TwitterUser:
         # - id come group id UNICO
         self.group = surname # uso questo come consumer group : deve essere unico altrimenti consuma messaggi di altri
 
-    def produce(self, topic):
+    def get_username(self):
+        return self.consumer_name
+
+    def produce(self, topic, message_text):
         headers = {
         "Content-Type" : "application/vnd.kafka.json.v2+json",
         "Accept": "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json"
@@ -38,18 +41,16 @@ class TwitterUser:
 
         url = f"http://localhost:8082/topics/{topic}"
 
-        while True:
-            message_text = input("What's happening?  ")
-            message = {
-              "value_schema": value_schema,
-              "records": [
-                {"key": self.consumer_name,
-                "value": message_text
-                }
-              ]
+        message = {
+          "value_schema": value_schema,
+          "records": [
+            {"key": self.consumer_name,
+            "value": message_text
             }
+          ]
+        }
 
-            r = requests.post(url, data=json.dumps(message), headers=headers)
+        r = requests.post(url, data=json.dumps(message), headers=headers)
 
     def get_consumer_instance(self):
         url=f"http://localhost:8082/consumers/{self.group}"
@@ -87,17 +88,20 @@ class TwitterUser:
         r = requests.get(url, headers=headers)
         json_data = json.loads(r.text)
 
+        msg_list = []
         for i in range(len(json_data)):
-            print('\033[31;40m ======================================================= \033[0;37;40m')
-            print(f'\033[32;40m {self.consumer_name} Message {i+1} \033[0;37;40m')
-            print('\033[31;40m ======================================================= \033[0;37;40m')
             res = json_data[i]
             message = base64.b64decode(res["value"]).decode('utf-8')
             key = base64.b64decode(res["key"]).decode('utf-8')
-            print(f'\033[33;40m Topic: \033[0;37;40m {res["topic"]}')
-            print(f'\033[33;40m Key: \033[0;37;40m {key}')
-            print(f'\033[33;40m Message: \033[0;37;40m {message}')
-            print('\n')
+            dict = {
+                'topic': res["topic"],
+                'key': key,
+                'message': message
+                }
+            msg_list.append(dict)
+
+        return msg_list
+
 
     def get_message_streaming(self):
         print(f'{Fore.BLUE}\t\t{HOME_STRING}{Style.RESET_ALL}')
@@ -106,10 +110,10 @@ class TwitterUser:
         "Accept" : "application/vnd.kafka.binary.v2+json"
         }
 
-        while keyboard.is_pressed('w') == False:
+        while True:
+            time.sleep(1)
             r = requests.get(url, headers=headers)
             json_data = json.loads(r.text)
-
             for i in range(len(json_data)):
                 ts = time.time()
                 st = datetime.datetime.fromtimestamp(ts).strftime('%d-%m-%Y %H:%M:%S')

@@ -4,6 +4,8 @@ from tkinter import font  as tkfont
 from HomePage import HomePage
 from LoginPage import LoginPage
 from WritePage import WritePage
+from ReadPage import ReadPage
+from StreamingReadPage import StreamingReadPage
 
 class KafkaTwitter(tk.Tk):
 
@@ -21,9 +23,11 @@ class KafkaTwitter(tk.Tk):
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
-
+        # twitter user
+        self.twitter_user = None
+        # per controllare quale pagina è mostrata
         self.frames = {}
-        for F in (LoginPage, HomePage, WritePage):
+        for F in (LoginPage, HomePage, WritePage, ReadPage, StreamingReadPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -32,13 +36,23 @@ class KafkaTwitter(tk.Tk):
             # the one on the top of the stacking order
             # will be the one that is visible.
             frame.grid(row=0, column=0, sticky="nsew")
-
         self.show_frame("LoginPage")
 
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
         frame = self.frames[page_name]
         frame.tkraise()
+        frame.update()
+        frame.event_generate("<<ShowFrame>>")
+
+    def set_twitter_user(self,tu):
+        self.twitter_user = tu
+
+    def get_twitter_user(self):
+        return self.twitter_user
+
+    def get_frames(self):
+        return self.frames
 
 if __name__ == "__main__":
     app = KafkaTwitter()
