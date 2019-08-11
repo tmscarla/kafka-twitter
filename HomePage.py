@@ -1,5 +1,5 @@
 import tkinter as tk
-from TwitterUser import TwitterUser
+from TwitterUserAvro import TwitterUser
 import requests
 import json
 from PIL import ImageTk, Image

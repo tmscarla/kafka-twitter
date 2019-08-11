@@ -1,5 +1,5 @@
 import tkinter as tk
-from TwitterUser import TwitterUser
+from TwitterUserAvro import TwitterUser
 import requests
 import json
 from tkinter import messagebox
@@ -40,7 +40,7 @@ class LoginPage(tk.Frame):
             self.twitter_user = self._login(self.name_box.get(), self.surname_box.get())
             self.controller.set_twitter_user(self.twitter_user)
             # subscribe to topic
-            self.twitter_user.subscribe_to_topic('middleware')
+            self.twitter_user.subscribe_to_topic(self.controller.topic)
             self.controller.show_frame("HomePage")
 
         else:
@@ -55,7 +55,7 @@ class LoginPage(tk.Frame):
 
         payload = {
           "name": f"{name}",
-          "format": "binary",
+          "format": "avro",
           "auto.offset.reset": "earliest",
           "auto.commit.enable": "true" # se metto a 'true' cancella i messaggi: va messo per il singolo consumer
         }

@@ -3,3 +3,5 @@
 *.idea
 confluent-5.1.2/*
 *.pyc
+avro-python3-1.9.0/*
+confluent-5.3.0/*

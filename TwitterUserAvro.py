@@ -6,9 +6,6 @@ import datetime
 import time
 from colorama import Fore, Back, Style
 
-value_schema = """{"name":"tweet","type": "string"}"""
-#TODO: datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') per il ts
-
 class TwitterUser:
 
     def __init__(self, name, surname):
@@ -18,28 +15,36 @@ class TwitterUser:
         # - post a twitter che rende un id
         # - id come group id UNICO
         self.group = surname # uso questo come consumer group : deve essere unico altrimenti consuma messaggi di altri
+        self.value_schema = open('tweet_schema.avsc', 'r', newline='').read()
+        # this is useful to track each tweet of a user
+        self.user_tweet_id = 0
 
     def get_username(self):
         return self.consumer_name
 
-    def produce(self, topic, message_text):
+    def produce(self, topic, message_text, tags=[], mentions=[]):
         headers = {
-        "Content-Type" : "application/vnd.kafka.json.v2+json",
+        "Content-Type" : "application/vnd.kafka.avro.v2+json",
         "Accept": "application/vnd.kafka.v2+json, application/vnd.kafka+json, application/json"
         }
-
         url = f"http://localhost:8082/topics/{topic}"
-
         message = {
-          "value_schema": value_schema,
-          "records": [
-            {"key": self.consumer_name,
-            "value": message_text
+        'value_schema': self.value_schema,
+        'records': [{
+            'value':{
+                "author":f"{self.consumer_name}",
+                "content": f"{message_text}",
+                "timestamp":f"{time.time()}", # attach current timestamp
+                "location":"Firenze",
+                "tags": tags,
+                "mentions": mentions,
+                "id":  self.user_tweet_id
             }
-          ]
+            }]
         }
-
+        print(message)
         r = requests.post(url, data=json.dumps(message), headers=headers)
+        self.user_tweet_id += 1 # increment number of tweets of the user
 
     def get_consumer_instance(self):
         url=f"http://localhost:8082/consumers/{self.group}"
@@ -50,7 +55,7 @@ class TwitterUser:
 
         payload = {
           "name": f"{self.consumer_name}",
-          "format": "binary",
+          "format": "avro",
           "auto.offset.reset": "earliest",
           "auto.commit.enable": "true" # se metto a 'true' cancella i messaggi: va messo per il singolo consumer
         }
@@ -72,22 +77,14 @@ class TwitterUser:
     def get_message(self):
         url = f'http://localhost:8082/consumers/{self.group}/instances/{self.consumer_name}/records?timeout=3000&max_bytes=300000'
         headers = {
-        "Accept" : "application/vnd.kafka.binary.v2+json"
+        "Accept" : "application/vnd.kafka.avro.v2+json"
         }
         r = requests.get(url, headers=headers)
-        json_data = json.loads(r.text)
-
+        print(r.text)
         msg_list = []
-        for i in range(len(json_data)):
-            res = json_data[i]
-            message = base64.b64decode(res["value"]).decode('utf-8')
-            key = base64.b64decode(res["key"]).decode('utf-8')
-            dict = {
-                'topic': res["topic"],
-                'key': key,
-                'message': message
-                }
-            msg_list.append(dict)
+        for m in r.json():
+            print(m)
+            msg_list.append(m)
 
         return msg_list
 
@@ -95,26 +92,23 @@ class TwitterUser:
     def get_message_streaming(self):
         url = f'http://localhost:8082/consumers/{self.group}/instances/{self.consumer_name}/records?timeout=3000&max_bytes=300000'
         headers = {
-        "Accept" : "application/vnd.kafka.binary.v2+json"
+        "Accept" : "application/vnd.kafka.avro.v2+json"
         }
 
         while True:
             time.sleep(1)
+            # must check the timestamp to show only last 5 min tweets
+            current_ts = time.time()
             r = requests.get(url, headers=headers)
-            json_data = json.loads(r.text)
-            for i in range(len(json_data)):
-                ts = time.time()
-                st = datetime.datetime.fromtimestamp(ts).strftime('%d-%m-%Y %H:%M:%S')
-                res = json_data[i]
-                message = base64.b64decode(res["value"]).decode('utf-8')
-                key = base64.b64decode(res["key"]).decode('utf-8')
-                if key != self.consumer_name:
-                    print('\033[31;40m ======================================================= \033[0;37;40m')
-                    print(f'\033[32;40m {self.consumer_name}, new tweet at time {st} \033[0;37;40m')
-                    print('\033[31;40m ======================================================= \033[0;37;40m')
-                    print(f'\033[33;40m User: \033[0;37;40m {key}')
-                    print(f'\033[33;40m Tweet: \033[0;37;40m {message}')
-                    print('\n')
+            msg_list = []
+            for m in r.json():
+                msg_ts = m['value']['timestamp']
+                if (current_ts-float(msg_ts)) < 60:
+                    print(m)
+                    msg_list.append(m)
+
+            return msg_list
+
 
 
     def delete_consumer_instance(self):
@@ -130,6 +124,7 @@ class TwitterUser:
 if __name__ == '__main__':
     tu = TwitterUser('Matteo', 'Moreschini')
     tu.get_consumer_instance()
-    tu.subscribe_to_topic('middleware')
+    tu.subscribe_to_topic('mmmm')
+    tu.produce('mmmm', 'try')
     tu.get_message()
     tu.delete_consumer_instance()

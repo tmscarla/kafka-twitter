@@ -1,0 +1,48 @@
+{
+  "type": "record",
+  "name": "Tweet",
+  "namespace": "model.tweet",
+  "fields": [
+    {
+      "name": "author",
+      "type": "string",
+      "doc": "The username of the author of the tweet."
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "doc": "The content of the tweet."
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "The timestamp in which the tweet has been published."
+    },
+    {
+      "name": "location",
+      "type": "string",
+      "doc": "The location where the author published the tweet."
+    },
+    {
+      "name": "tags",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "The hastags of the tweet."
+    },
+    {
+      "name": "mentions",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "The mentions of the tweet."
+    },
+    {
+      "name": "id",
+      "type": "int",
+      "doc": "The id of the user twitter, assigned incrementally from 0 for each user."
+    }
+  ]
+}

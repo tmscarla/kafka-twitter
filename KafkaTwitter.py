@@ -25,6 +25,7 @@ class KafkaTwitter(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
         # twitter user
         self.twitter_user = None
+        self.topic = 'mmmmmmmm'
         # per controllare quale pagina è mostrata
         self.frames = {}
         for F in (LoginPage, HomePage, WritePage, ReadPage, StreamingReadPage):

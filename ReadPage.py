@@ -2,6 +2,7 @@ import tkinter as tk
 from TwitterUser import TwitterUser
 import requests
 import json
+import datetime
 from tkinter import messagebox
 
 class ReadPage(tk.Frame):
@@ -40,7 +41,9 @@ class ReadPage(tk.Frame):
         msgs = self.twitter_user.get_message()
 
         for m in msgs:
-            display_msg = f"{m['key']}: {m['message']} "
+            # transform timestamp to a better readable format
+            msg_ts = datetime.datetime.fromtimestamp(float(m['value']['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
+            display_msg = f"{m['value']['author']}: {m['value']['content']} - ({msg_ts})"
             self.msg_list.insert(0,display_msg)
             self.msg_list.insert(0,"=====================================================")
 

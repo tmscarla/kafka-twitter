@@ -2,6 +2,7 @@ import tkinter as tk
 from TwitterUser import TwitterUser
 import requests
 import json
+import datetime
 from tkinter import messagebox
 
 class StreamingReadPage(tk.Frame):
@@ -22,7 +23,7 @@ class StreamingReadPage(tk.Frame):
         self.scrollbar =  tk.Scrollbar(self)
         self.scrollbar.pack(side = 'left', fill='y')
         self.msg_list = tk.Listbox(self, height="70",width="50",yscrollcommand = self.scrollbar.set)
-        self.scrollbar.config(command = self.msg_list.yview )
+        self.scrollbar.config(command = self.msg_list.yview)
 
     def get_is_shown(self):
         return self.is_shown
@@ -37,21 +38,27 @@ class StreamingReadPage(tk.Frame):
 
             back_btn = tk.Button(self, text="<- Back to Home", command=self._back_to_home, height="2", width="30").pack()
             self.n_times_shown =-1
+
+        self.is_shown = True
         self._get_msg_list_resc()
 
     def _get_msg_list(self):
         msgs = self.twitter_user.get_message()
 
         for m in msgs:
-            display_msg = f"{m['key']}: {m['message']} "
+            # transform timestamp to a better readable format
+            msg_ts = datetime.datetime.fromtimestamp(float(m['value']['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
+            display_msg = f"{m['value']['author']}: {m['value']['content']} ({msg_ts})"
             self.msg_list.insert(0,display_msg)
-            self.msg_list.insert(0,"=====================================================")
+            #self.msg_list.insert(0,"=====================================================")
 
         self.msg_list.pack(pady=5)
+        #print(f"{self.msg_list.get(0, self.msg_list.size())}")
 
-    def _get_msg_list_resc(self):
-        self._get_msg_list()
-        self.after(1000, self._get_msg_list_resc)
+    def _get_msg_list_resc(self): # _get_msg_list rescheduled
+        if self.is_shown == True: # altrimenti non ha senso che continui a fare richieste
+            self._get_msg_list()
+            self.after(1000, self._get_msg_list_resc)
 
     def _back_to_home(self):
         self.is_shown = False
