@@ -33,6 +33,7 @@ class WritePage(tk.Frame):
             publish_btn = tk.Button(self, text="Publish!", command=self._publish, height="2", width="30").pack()
 
             self.n_times_shown =-1
+        self._clear_text()
 
     def _publish(self):
         if self.tweet_txt.get()!='':

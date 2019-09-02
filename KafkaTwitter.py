@@ -5,7 +5,7 @@ from HomePage import HomePage
 from LoginPage import LoginPage
 from WritePage import WritePage
 from ReadPage import ReadPage
-from StreamingReadPage import StreamingReadPage
+from StreamingKSQL import StreamingKSQL
 
 class KafkaTwitter(tk.Tk):
 
@@ -25,10 +25,11 @@ class KafkaTwitter(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
         # twitter user
         self.twitter_user = None
-        self.topic = 'mmmmmmmm'
+        self.topic = 'test_kt'
+        self.streaming_topic = 'test_kf_s'
         # per controllare quale pagina è mostrata
         self.frames = {}
-        for F in (LoginPage, HomePage, WritePage, ReadPage, StreamingReadPage):
+        for F in (LoginPage, HomePage, WritePage, ReadPage, StreamingKSQL):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame

@@ -5,13 +5,13 @@ import json
 import datetime
 from tkinter import messagebox
 
-class ReadPage(tk.Frame):
+class StreamingKSQL(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.pages = controller.get_frames() # prende le pagine
         self.controller = controller
-
+        self.is_shown = False
         # user creation
         # it does the following:
         # the first time that the page is shown, it triggers a funciton that
@@ -23,9 +23,10 @@ class ReadPage(tk.Frame):
         self.scrollbar =  tk.Scrollbar(self)
         self.scrollbar.pack(side = 'left', fill='y')
         self.msg_list = tk.Listbox(self, height="70",width="50",yscrollcommand = self.scrollbar.set)
-        self.scrollbar.config(command = self.msg_list.yview )
+        self.scrollbar.config(command = self.msg_list.yview)
 
-
+    def get_is_shown(self):
+        return self.is_shown
 
     def _on_first_show_frame(self, event):
         if self.n_times_shown == 0:
@@ -38,17 +39,31 @@ class ReadPage(tk.Frame):
             back_btn = tk.Button(self, text="<- Back to Home", command=self._back_to_home, height="2", width="30").pack()
             self.n_times_shown =-1
 
-        msgs = self.twitter_user.get_message()
+        self.is_shown = True
+        self.twitter_user.start_streaming()
+        self._get_msg_list_resc()
+
+    def _get_msg_list(self):
+        msgs = self.twitter_user.get_streaming_messages()
 
         for m in msgs:
-            # transform timestamp to a better readable format
-            msg_ts = datetime.datetime.fromtimestamp(float(m['value']['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
-            display_msg = f"[{m['value']['author']}]: {m['value']['content']} ({m['value']['location']} - {msg_ts})"
-            self.msg_list.insert(0,display_msg)
-            self.msg_list.insert(0,"=====================================================")
+            ts = datetime.datetime.fromtimestamp(float(m[2])).strftime('%H:%M:%S, %d-%m-%Y')
+            display_message = f'[{m[0]}]: {m[1]} ({m[3]} - {ts})'
+            self.msg_list.insert(0,display_message)
 
-        self.msg_list.pack(pady=5)#(side = 'right', fill='both', pady=10)
+        self.msg_list.pack(pady=5)
+
+    def _destroy_msg_list(self):
+        self.msg_list.delete('0', 'end')
+
+    def _get_msg_list_resc(self): # _get_msg_list rescheduled
+        if self.is_shown == True: # altrimenti non ha senso che continui a fare richieste
+            self._destroy_msg_list() # ogni volta clearo la listbox e ristampo solo quelle con il timestamp che matcha
+            self._get_msg_list()
+            self.after(1000, self._get_msg_list_resc)
 
     def _back_to_home(self):
+        self.is_shown = False
         print('Back to Home.')
         self.controller.show_frame("HomePage")
+        self.twitter_user.stop_streaming()

@@ -47,9 +47,9 @@ class StreamingReadPage(tk.Frame):
 
         for m in msgs:
             # transform timestamp to a better readable format
-            msg_ts = datetime.datetime.fromtimestamp(float(m['value']['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
-            display_msg = f"{m['value']['author']}: {m['value']['content']} ({msg_ts})"
-            self.msg_list.insert(0,display_msg)
+            #msg_ts = datetime.datetime.fromtimestamp(float(m['value']['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
+            #display_msg = f"{m['value']['author']}: {m['value']['content']} ({msg_ts})"
+            self.msg_list.insert(0,m)
             #self.msg_list.insert(0,"=====================================================")
 
         self.msg_list.pack(pady=5)
