@@ -66,4 +66,4 @@ class StreamingKSQL(tk.Frame):
         self.is_shown = False
         print('Back to Home.')
         self.controller.show_frame("HomePage")
-        self.twitter_user.stop_streaming()
+        #self.twitter_user.stop_streaming()

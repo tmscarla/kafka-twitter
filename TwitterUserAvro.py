@@ -22,6 +22,9 @@ class TwitterUser:
     def get_username(self):
         return self.user_id
 
+    def get_user_tweet_id(self):
+        return self.user_tweet_id
+
     def get_streaming_messages(self):
         time_interval = 10 # si mostrano solo i messaggi degli ultimi 5min=600s
         if len(self.streaming_messages)!=0:
@@ -119,7 +122,9 @@ class TwitterUser:
             query = query +';'
             payload = { #"ksql": "SELECT * FROM prova_x; ",
                         "ksql": f'{query}',
-                        "streamsProperties": {}
+                        "streamsProperties": {
+                            "ksql.streams.auto.offset.reset": "earliest"
+                            }
                         }
             headers = {"Content-Type" : "application/vnd.ksql.v1+json; charset=utf-8"}
             req = requests.Request("POST","http://localhost:8088/query",

@@ -49,6 +49,10 @@ class ReadPage(tk.Frame):
 
         self.msg_list.pack(pady=5)#(side = 'right', fill='both', pady=10)
 
+    def _destroy_msg_list(self):
+        self.msg_list.delete('0', 'end')
+
     def _back_to_home(self):
         print('Back to Home.')
         self.controller.show_frame("HomePage")
+        self._destroy_msg_list()

@@ -38,6 +38,14 @@ class WritePage(tk.Frame):
     def _publish(self):
         if self.tweet_txt.get()!='':
             self.twitter_user.produce(self.controller.topic, self.tweet_txt.get())
+            payload = {
+                'consumer_name': f'{self.twitter_user.get_username()}',
+                'user_tweet_id': int(self.twitter_user.get_user_tweet_id()),
+                'message_text': f'{self.tweet_txt.get()}'
+            }
+
+            r = requests.post("http://127.0.0.1:5000/tweet", data=payload)
+
             print('Tweet published!')
             self.controller.show_frame("HomePage")
             self._clear_text()
