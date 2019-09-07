@@ -17,6 +17,22 @@
       "name": "location",
       "type": "string",
       "doc": "The location where the author published the tweet."
-    }    
+    },
+    {
+      "name": "tags",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "The hastags of the tweet."
+    },
+    {
+      "name": "mentions",
+      "type": {
+        "type": "array",
+        "items": "string"
+      },
+      "doc": "The mentions of the tweet."
+    }
   ]
 }

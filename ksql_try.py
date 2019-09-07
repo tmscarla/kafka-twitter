@@ -3,11 +3,11 @@ import json
 
 # <path-to-confluent>/bin/confluent local start
 # urls
-base_url = "http://0.0.0.0:8088/ksql"
+base_url = "http://localhost:8088/ksql"
 query_url = "http://localhost:8088/query"
 
-input_topic = 'test_kt'
-output_topic = 'test_kf_s'
+input_topic = 'start1'
+output_topic = 'streamingprova4'
 
 # create ksql stream
 create_stream = False
@@ -29,7 +29,7 @@ if create_stream:
     print(r.text)
 
 # read ksql
-do_streaming = False
+do_streaming = True
 
 if do_streaming:
     s = requests.Session() # session creation
@@ -60,13 +60,3 @@ if do_streaming:
             print(line)
 
     read_stream()
-
-from Threading import Threading
-import time
-t = Threading()
-time.sleep(2)
-print(t.get_thread_status())
-time.sleep(2)
-t.terminate_thread()
-time.sleep(0.1)
-print(t.get_thread_status())

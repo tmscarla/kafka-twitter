@@ -7,7 +7,7 @@ from PIL import ImageTk, Image
 class HomePage(tk.Frame):
 
     def __init__(self, parent, controller):
-        twitter_blue = '#%02x%02x%02x' % (68,162,242)
+        twitter_blue = '#%02x%02x%02x' % (255,255,255) #(68,162,242)
         tk.Frame.__init__(self,
                         parent,
                         background = twitter_blue
@@ -42,18 +42,35 @@ class HomePage(tk.Frame):
             label = tk.Label(self, text=f"What do you want to do, {self.twitter_user.get_username()}?", height='5',font=self.controller.title_font)
             label.pack(side="top", fill='both')
 
-            # mode buttons
+            # read mode button
             read_button = tk.Button(self, text="Read", command=self._read, height="2", width="30").pack(pady=5)
-            write_button = tk.Button(self, text="Write", command=self._write, height="2", width="30").pack(pady=5)
+            # filtering options
+            """
+            city_label_read = tk.Label(self, text="City Filter:", font=self.controller.title_font).pack(side="top", fill="x", pady=5)
+            self.city_box_read = tk.Entry(self,width=20)
+            self.city_box_read.pack()
+            """
+            # streaming mode button
             streaming_button = tk.Button(self, text="Streaming", command=self._streaming, height="2", width="30").pack(pady=5)
+            # filtering options
+            """
+            city_label_streaming = tk.Label(self, text="City Filter:", font=self.controller.title_font).pack(side="top", fill="x", pady=5)
+            self.city_box_streaming = tk.Entry(self,width=20)
+            self.city_box_streaming.pack()
+            """
+            # write mode button
+            write_button = tk.Button(self, text="Write", command=self._write, height="2", width="30").pack(pady=5)
+
 
             # carica logo
-            img = Image.open("images/logo.png")
+            """
+            img = Image.open("images/logo.jpg")
             w,h = img.size
             img_resized = img.resize((w//4,h//4), Image.ANTIALIAS)
             image = ImageTk.PhotoImage(img_resized)
             panel = tk.Label(self, image = image, background='white')
             panel.photo = image
             panel.pack(side='bottom',fill='both')
+            """
 
             self.n_times_shown =-1

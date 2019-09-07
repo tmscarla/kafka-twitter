@@ -7,7 +7,7 @@ import time
 from colorama import Fore, Back, Style
 import threading
 
-STREAM_TOPIC = 'streamingprova4'
+STREAM_TOPIC = 'streamingprova2'
 BASE_TOPIC = 'start1'
 
 class TwitterUser:
@@ -76,30 +76,42 @@ class TwitterUser:
         print(r.text)
 
     def subscribe_to_topic(self,topic):
-        url = f'http://localhost:8082/consumers/{self.user_id}/instances/{self.user_id}/subscription'
-        headers = {
-        "Content-Type" : "application/vnd.kafka.json.v2+json"
+        c = Consumer(settings)
+        settings = {
+            'bootstrap.servers': 'localhost:9092',
+            'group.id': 'lu',
+            'default.topic.config': {
+                'auto.offset.reset': 'earliest',
+                "auto.commit.enable": "true"
+            }
         }
-        payload = {
-          "topics": [
-            f"{topic}"
-          ]
-        }
-        r = requests.post(url, data=json.dumps(payload), headers = headers)
+        c.subscribe([BASE_TOPIC])
 
-    def get_message(self):
-        url = f'http://localhost:8082/consumers/{self.user_id}/instances/{self.user_id}/records?timeout=3000&max_bytes=300000'
-        headers = {
-        "Accept" : "application/vnd.kafka.avro.v2+json"
-        }
-        r = requests.get(url, headers=headers)
-        print(r.text)
-        msg_list = []
-        for m in r.json():
-            print(m)
-            msg_list.append(m)
 
-        return msg_list
+    def get_message_2(self):
+        from confluent_kafka import Consumer, KafkaError
+        settings = {
+            'bootstrap.servers': 'localhost:9092',
+            'group.id': 'lu',
+        #    'plugin.library.paths': 'monitoring-interceptor',
+            'default.topic.config': {'auto.offset.reset': 'earliest'}
+        }
+        c = Consumer(settings)
+        c.subscribe(['start1'])
+        while True:
+            msg = c.poll()
+
+            if msg.error():
+                if msg.error().code() == KafkaError._PARTITION_EOF:
+                    continue
+                else:
+                    print(msg.error())
+                    break
+
+            print('Received message: {}'.format(msg.value().decode('utf-8')))
+
+        c.close()
+
 
     def start_streaming(self):
         self.streaming_thread = threading.Thread(target=self.get_message_streaming_ksql, args=())
@@ -124,7 +136,9 @@ class TwitterUser:
             query = query +';'
             payload = { #"ksql": "SELECT * FROM prova_x; ",
                         "ksql": f'{query}',
-                        "streamsProperties": {}
+                        "streamsProperties": {
+                            #"ksql.streams.auto.offset.reset": "earliest"
+                            }
                         }
             headers = {"Content-Type" : "application/vnd.ksql.v1+json; charset=utf-8"}
             req = requests.Request("POST","http://localhost:8088/query",
@@ -154,12 +168,3 @@ class TwitterUser:
         "Content-Type" : "application/vnd.kafka.json.v2+json"
         }
         r = requests.delete(url, headers=headers)
-
-
-if __name__ == '__main__':
-    tu = TwitterUser('Matteo', 'Moreschini')
-    tu.get_consumer_instance()
-    tu.subscribe_to_topic('mmmm')
-    tu.produce('mmmm', 'try')
-    tu.get_message()
-    tu.delete_consumer_instance()

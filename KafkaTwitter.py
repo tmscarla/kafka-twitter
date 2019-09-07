@@ -26,7 +26,7 @@ class KafkaTwitter(tk.Tk):
         # twitter user
         self.twitter_user = None
         self.topic = 'test_kt'
-        self.streaming_topic = 'test_kf_s'
+        self.streaming_topic = 'streamingprova2'
         # per controllare quale pagina è mostrata
         self.frames = {}
         for F in (LoginPage, HomePage, WritePage, ReadPage, StreamingKSQL):

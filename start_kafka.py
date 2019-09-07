@@ -10,7 +10,7 @@ run_kafka = f".{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/bin/kafka-server-start .{
 run_schema_reg = f".{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/bin/schema-registry-start .{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/etc/schema-registry/schema-registry.properties"
 run_rest = f".{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/bin/kafka-rest-start .{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/etc/kafka-rest/kafka-rest.properties"
 
-run_ksql = f".{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/bin/ksql-server-start .{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/etc/kafka-rest/ksql-server.properties"
+run_ksql = f".{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/bin/ksql-server-start .{PATH_TO_CONFLUENT_DIR}/confluent-5.3.0/etc/ksql/ksql-server.properties"
 
 #/Users/Teo/Documents/GitHub/kafka-twitter/confluent-5.3.0/bin/ksql-server-start /Users/Teo/Documents/GitHub/kafka-twitter/confluent-5.3.0/etc/ksql/ksql-server.properties
 

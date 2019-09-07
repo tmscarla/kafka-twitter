@@ -1,9 +1,12 @@
 import spacy
 from spacy.lang.en import English
+"""
 import nltk
 import ssl
 from nltk.corpus import wordnet as wn
 from nltk.stem.wordnet import WordNetLemmatizer
+"""
+from gensim.corpora import Dictionary
 import random
 import pandas as pd
 from gensim import corpora
@@ -62,7 +65,7 @@ def tweet_cleaner(tweets):
 
 
 if __name__=='__main__':
-
+    """
     if DOWNLOAD_WORDLISTS:
         try:
             _create_unverified_https_context = ssl._create_unverified_context
@@ -130,6 +133,13 @@ if __name__=='__main__':
     print(len(topics))
     for topic in topics:
         print(topic)
+    """
+    from gensim.models.ldamulticore import LdaMulticore
+    parser = English()
+    ldamodel = LdaMulticore.load("model5.gensim")
+    dictionary = corpora.Dictionary
+    dictionary.load('dictionary.gensim')
+
 
     new_doc = 'Math is very important'
     new_doc = prepare_text_for_lda(new_doc)

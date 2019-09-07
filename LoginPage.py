@@ -23,7 +23,7 @@ class LoginPage(tk.Frame):
         panel.photo = image
         panel.pack(side='top',fill='both')
         # entry boxes
-        name_label = tk.Label(self, text="Username:", font=controller.title_font).pack(side="top", fill="x", pady=5)
+        name_label = tk.Label(self, text="Username:", font=self.controller.title_font).pack(side="top", fill="x", pady=5)
         self.name_box = tk.Entry(self,width=20)
         self.name_box.pack()
         # for the moment just comment this
