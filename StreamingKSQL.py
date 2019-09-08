@@ -4,6 +4,7 @@ import requests
 import json
 import datetime
 from tkinter import messagebox
+import time
 
 class StreamingKSQL(tk.Frame):
 
@@ -12,10 +13,19 @@ class StreamingKSQL(tk.Frame):
         self.pages = controller.get_frames() # prende le pagine
         self.controller = controller
         self.is_shown = False
+        # default no filters
+        self.cityfilter = 'ALL'
+        self.mentionfilter = 'ALL'
+        self.tagfilter = 'ALL'
+        # messages to show
+        self.msg_to_show = []
+        self.t = threading.Thread(target = self._stream_response, args = ())
+        self.t.daemon = True
         # user creation
         self.user_id = None
         self.streaming_url = 'http://127.0.0.1:5000/tweets/streaming'
         self.n_times_shown = 0 # we'll use this to trigger the creation of the User at start
+        self.is_first_req = True # we'll use it to start the thread: threads cannot be restarted!
         self.bind("<<ShowFrame>>", self._on_first_show_frame) # binda all'evento, serve per dire quando viene mostrata
 
         # filter entries
@@ -57,22 +67,37 @@ class StreamingKSQL(tk.Frame):
         self._destroy_msg_list()
 
         # convert all to lower case
-        cityfilter = self.cf.get().lower()
-        mentionfilter = self.mf.get().lower()
-        tagfilter = self.tf.get().lower()
+        self.cityfilter = self.cf.get().lower()
+        self.mentionfilter = self.mf.get().lower()
+        self.tagfilter = self.tf.get().lower()
 
         # if no filter is applied, select all city/mention/tag
-        if cityfilter=='':
-            cityfilter = 'ALL'
-        if mentionfilter=='':
-            mentionfilter = 'ALL'
-        if tagfilter=='':
-            tagfilter = 'ALL'
+        if self.cityfilter=='':
+            self.cityfilter = 'ALL'
+        if self.mentionfilter=='':
+            self.mentionfilter = 'ALL'
+        if self.tagfilter=='':
+            self.tagfilter = 'ALL'
 
+        if self.is_first_req:
+            self.t.start()
+            self.is_first_req = False
+        self._display_msg()
+
+    def _display_msg(self): # _get_msg_list rescheduled
+        if self.is_shown == True: # altrimenti non ha senso che continui a fare richieste
+            self._destroy_msg_list()
+            for m in self.msg_to_show:
+                self.msg_list.insert('end',m)
+            self.msg_list.pack(pady=5)
+            self.after(1000, self._display_msg)
+        print(f'Thead alive: {self.t.isAlive()}')
+
+    def _stream_response(self):
         payload = {
-            'cityfilter': cityfilter,
-            'mentionfilter': mentionfilter,
-            'tagfilter': tagfilter
+            'cityfilter': self.cityfilter,
+            'mentionfilter': self.mentionfilter,
+            'tagfilter': self.tagfilter
         }
         cookies={'username': self.user_id}
 
@@ -82,44 +107,28 @@ class StreamingKSQL(tk.Frame):
 
         is_start=True
         for c in r.iter_content(decode_unicode=True):
-            if (c):
-                if str(c) =='`' and is_start==True:
-                    msg_string =''
-                    is_start = False
-                elif str(c) =='`' and is_start==False:
-                    print(json.loads(msg_string))
-                    is_start=True
+            if self.is_shown:
+                if (c):
+                    if str(c) =='`' and is_start==True:
+                        msg_string =''
+                        is_start = False
+                    elif str(c) =='`' and is_start==False:
+                        print(json.loads(msg_string))
+                        self.msg_to_show = [x for x in json.loads(msg_string)]
+                        is_start=True
+                    else:
+                        msg_string += str(c)
                 else:
-                    msg_string += str(c)
+                    print('===')
             else:
-                print('===')
-
-    def _stream_response(self, r):
-        # single string message
-        msg_string = ""
-        # the entire msg list to display
-        # this one is useful to split the strings finding starting and final byte
-        is_start=True
-        for c in r.iter_content(decode_unicode=True):
-            if (c):
-                if str(c) =='`' and is_start==True:
-                    msg_string =''
-                    is_start = False
-                elif str(c) =='`' and is_start==False:
-                    msgs = json.loads(msg_string) # bc it's a string representation of a list
-                    #self._destroy_msg_list()
-                    print(msgs)
-                    #for m in msgs:
-                    #    self.msg_list.insert('end',m)
-                    self.msg_list.pack(pady=5)
-                    is_start=True
-                else:
-                    msg_string += str(c)
+                continue
+        print('STREAMING FINITO!')
 
     def _destroy_msg_list(self):
         self.msg_list.delete('0', 'end')
 
     def _back_to_home(self):
         self.is_shown = False
+        print(f'Thead alive: {self.t.isAlive()}')
         print('Back to Home.')
         self.controller.show_frame("HomePage")

@@ -27,7 +27,6 @@ STREAMING_WINDOW_SECONDS = 10
 @app.route('/users/id', methods=['POST'])
 def subscribe():
     id = request.form['id']
-    """
     # create consumer and producer
     c = AvroConsumer(
         {
@@ -39,25 +38,7 @@ def subscribe():
     # assign the partition
     c.assign([TopicPartition(TOPIC, 0,0)])
     print(f"Assignments: {c.assignment()}")
-    """
-    url=f"http://localhost:8082/consumers/{id}"
 
-    headers = {
-    "Content-Type" : "application/vnd.kafka.json.v2+json"
-    }
-
-    payload = {
-      "name": f"{id}",
-      "auto.offset.reset": "earliest",
-      "auto.commit.enable": "true" # se metto a 'true' cancella i messaggi: va messo per il singolo consumer
-    }
-    r = requests.post(url, data=json.dumps(payload), headers=headers)
-    json_data = json.loads(r.text)
-    if 'error_code' in json_data:
-        if json_data['error_code'] == 40902:
-            print(f'Welcome back, {id}!')
-    else:
-        print(f"We're creating your KafkaTwitter account, {id}!")
     return f"Logged in as {id}"
 
 # Publish URL
@@ -87,7 +68,7 @@ def produce_tweet():
         'enable.idempotence': 'true',
         'schema.registry.url': SCHEMA_REGISTRY_URL
         }, default_key_schema=KEY_SCHEMA, default_value_schema=VALUE_SCHEMA)
-    p.begin_
+
     p.produce(topic=TOPIC, value=value, key=key)
     p.flush()
     return 'Tweet published!'
@@ -106,15 +87,12 @@ def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
             'bootstrap.servers': BOOTSTRAP_SERVERS,
             'group.id': username,
             'schema.registry.url': SCHEMA_REGISTRY_URL,
-            'auto.offset.reset': 'latest'
             #'isolation.level': 'read_committed'
             }
         )
-        #print(f'committed: {c.committed([TopicPartition(TOPIC)])}')
         c.assign([TopicPartition(TOPIC, 0,0)])
         low_offset, high_offset = c.get_watermark_offsets(TopicPartition(TOPIC, 0))
-        print(f"the latest offset is {high_offset}, the low is {low_offset}")
-        print(f"consumer position: {c.position([TopicPartition(TOPIC, 0)])}")
+        #print(f"the latest offset is {high_offset}, the low is {low_offset}")
 
         # move consumer to offset=high_offset-WINDOW_LEN (only if > 0)
         if high_offset-WINDOW_LEN>0:
@@ -147,7 +125,7 @@ def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
             tags = [h[1:] for h in content.split() if h.startswith('#')]
             mentions = [h[1:] for h in content.split() if h.startswith('@')]
             print(f"[{author}] {content} ({location} - {timestamp}) mentions: {mentions}")
-            print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, new_offset)])}")
+            #print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, new_offset)])}")
             pos = c.position([TopicPartition(TOPIC, 0, new_offset)])
 
             if cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
@@ -185,17 +163,12 @@ def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
 # Streaming (with filters) URL
 @app.route('/tweets/streaming', methods=['POST'])
 def streaming_filtering():
-    cityfilter = request.form['cityfilter'].lower()
-    mentionfilter = request.form['mentionfilter'].lower()
-    tagfilter = request.form['tagfilter'].lower()
-
-    # if no filter is applied, select all city/mention/tag
-    if cityfilter=='':
-        cityfilter = 'ALL'
-    if mentionfilter=='':
-        mentionfilter = 'ALL'
-    if tagfilter=='':
-        tagfilter = 'ALL'
+    cityfilter = request.form['cityfilter']
+    mentionfilter = request.form['mentionfilter']
+    tagfilter = request.form['tagfilter']
+    print(f'cityfilter: {cityfilter}')
+    print(f'mentionfilter: {mentionfilter}')
+    print(f'tagfilter: {tagfilter}')
 
     if 'username' in request.cookies:
         username = request.cookies['username']
@@ -256,26 +229,30 @@ def streaming_filtering():
                 print(f"{display_message}")
                 print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, high_offset)])}")
                 pos = c.position([TopicPartition(TOPIC, 0, high_offset)])
+                print('prima')
+                print(f'cityfilter: {cityfilter}')
+                print(f'mentionfilter: {mentionfilter}')
+                print(f'tagfilter: {tagfilter}')
 
-                if cityfilter!="ALL" and mentionfilter!="ALL" and tagfilter!="ALL":
+                if cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
                     if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
-                elif cityfilter=="ALL" and mentionfilter!="ALL" and tagfilter!="ALL":
+                elif cityfilter=='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
                     if (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
-                elif cityfilter!="ALL" and mentionfilter=="ALL" and tagfilter!="ALL":
+                elif cityfilter!='ALL' and mentionfilter=='ALL' and tagfilter!='ALL':
                     if (location.lower() == cityfilter) and (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
-                elif cityfilter!="ALL" and mentionfilter!="ALL" and tagfilter=="ALL":
+                elif cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter=='ALL':
                     if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions):
                         msgs.append((display_message,message_ts))
-                elif cityfilter!="ALL" and mentionfilter=="ALL" and tagfilter=="ALL":
+                elif cityfilter!='ALL' and mentionfilter=='ALL' and tagfilter=='ALL':
                     if (location.lower() == cityfilter):
                         msgs.append((display_message,message_ts))
-                elif cityfilter=="ALL" and mentionfilter!="ALL" and tagfilter=="ALL":
+                elif cityfilter=='ALL' and mentionfilter!='ALL' and tagfilter=='ALL':
                     if (mentionfilter.lower() in mentions):
                         msgs.append((display_message,message_ts))
-                elif cityfilter=="ALL" and mentionfilter=="ALL" and tagfilter!="ALL":
+                elif cityfilter=='ALL' and mentionfilter=='ALL' and tagfilter!='ALL':
                     if (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
                 else:
@@ -290,26 +267,6 @@ def streaming_filtering():
         return Response(stream_with_context(gen(msgs)))
     else:
         return {"results": ['Oooops, your are not logged in...']}
-
-@app.route('/time', methods=['GET'])
-def streamed_response():
-    msg = []
-    def generate(msg):
-        count = 0
-        window = 5
-        while True:
-            count +=1
-            message = str(count)
-            message = message.replace("`", "'")
-            msg.append(message)
-            time.sleep(2)
-            #for i in msg:
-            #    print(i)
-            #    yield json.dumps(f"`{i}`")
-            msg = [x for x in msg if int(x)>len(msg)-window]
-            print(json.dumps(msg))
-            yield f' `{json.dumps(msg)}` '
-    return Response(stream_with_context(generate(msg)))
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port='5000', debug=True)
