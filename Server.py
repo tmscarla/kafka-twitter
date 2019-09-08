@@ -21,11 +21,13 @@ SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081'
 KEY_SCHEMA = avro.loads(open('key_schema.avsc', 'r', newline='').read())
 VALUE_SCHEMA = avro.loads(open('tweet_schema_3.avsc', 'r', newline='').read())
 WINDOW_LEN = 10
+STREAMING_WINDOW_SECONDS = 10
 
 # Subscription URL
 @app.route('/users/id', methods=['POST'])
 def subscribe():
     id = request.form['id']
+    """
     # create consumer and producer
     c = AvroConsumer(
         {
@@ -37,7 +39,25 @@ def subscribe():
     # assign the partition
     c.assign([TopicPartition(TOPIC, 0,0)])
     print(f"Assignments: {c.assignment()}")
+    """
+    url=f"http://localhost:8082/consumers/{id}"
 
+    headers = {
+    "Content-Type" : "application/vnd.kafka.json.v2+json"
+    }
+
+    payload = {
+      "name": f"{id}",
+      "auto.offset.reset": "earliest",
+      "auto.commit.enable": "true" # se metto a 'true' cancella i messaggi: va messo per il singolo consumer
+    }
+    r = requests.post(url, data=json.dumps(payload), headers=headers)
+    json_data = json.loads(r.text)
+    if 'error_code' in json_data:
+        if json_data['error_code'] == 40902:
+            print(f'Welcome back, {id}!')
+    else:
+        print(f"We're creating your KafkaTwitter account, {id}!")
     return f"Logged in as {id}"
 
 # Publish URL
@@ -63,10 +83,11 @@ def produce_tweet():
 
     p = AvroProducer({
         'bootstrap.servers': BOOTSTRAP_SERVERS,
-        'broker.address.family': 'v4',
+        #'broker.address.family': 'v4',
+        'enable.idempotence': 'true',
         'schema.registry.url': SCHEMA_REGISTRY_URL
         }, default_key_schema=KEY_SCHEMA, default_value_schema=VALUE_SCHEMA)
-
+    p.begin_
     p.produce(topic=TOPIC, value=value, key=key)
     p.flush()
     return 'Tweet published!'
@@ -74,14 +95,7 @@ def produce_tweet():
 
 # Batch (with filtering) URL
 @app.route('/tweets/cityfilter=<cityfilter>&mentionfilter=<mentionfilter>&tagfilter=<tagfilter>/latest', methods=['GET'])
-@app.route('/tweets/mentionfilter=<mentionfilter>&tagfilter=<tagfilter>/latest', methods=['GET'])
-@app.route('/tweets/cityfilter=<cityfilter>&mentionfilter=<mentionfilter>/latest', methods=['GET'])
-@app.route('/tweets/cityfilter=<cityfilter>&tagfilter=<tagfilter>/latest', methods=['GET'])
-@app.route('/tweets/cityfilter=<cityfilter>/latest', methods=['GET'])
-@app.route('/tweets/mentionfilter=<mentionfilter>/latest', methods=['GET'])
-@app.route('/tweets/tagfilter=<tagfilter>/latest', methods=['GET'])
-@app.route('/tweets/nofilters/latest', methods=['GET'])
-def batch_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
+def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
     # TODO: metti auto.commit = True? oppure tracka l'ultimo offset
 
     if 'username' in request.cookies:
@@ -91,9 +105,12 @@ def batch_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
             {
             'bootstrap.servers': BOOTSTRAP_SERVERS,
             'group.id': username,
-            'schema.registry.url': SCHEMA_REGISTRY_URL
+            'schema.registry.url': SCHEMA_REGISTRY_URL,
+            'auto.offset.reset': 'latest'
+            #'isolation.level': 'read_committed'
             }
         )
+        #print(f'committed: {c.committed([TopicPartition(TOPIC)])}')
         c.assign([TopicPartition(TOPIC, 0,0)])
         low_offset, high_offset = c.get_watermark_offsets(TopicPartition(TOPIC, 0))
         print(f"the latest offset is {high_offset}, the low is {low_offset}")
@@ -133,26 +150,26 @@ def batch_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
             print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, new_offset)])}")
             pos = c.position([TopicPartition(TOPIC, 0, new_offset)])
 
-            if cityfilter!=None and mentionfilter!=None and tagfilter!=None:
-                if (location == cityfilter) and (mentionfilter in mentions) and (tagfilter in tags):
+            if cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
+                if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
-            elif cityfilter==None and mentionfilter!=None and tagfilter!=None:
-                if (mentionfilter in mentions) and (tagfilter in tags):
+            elif cityfilter=='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
+                if (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
-            elif cityfilter!=None and mentionfilter==None and tagfilter!=None:
-                if (location == cityfilter) and (tagfilter in tags):
+            elif cityfilter!='ALL' and mentionfilter=='ALL' and tagfilter!='ALL':
+                if (location.lower() == cityfilter) and (tagfilter.lower() in tags):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
-            elif cityfilter!=None and mentionfilter!=None and tagfilter==None:
-                if (location == cityfilter) and (mentionfilter in mentions):
+            elif cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter=='ALL':
+                if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
-            elif cityfilter!=None and mentionfilter==None and tagfilter==None:
-                if (location == cityfilter):
+            elif cityfilter!='ALL' and mentionfilter=='ALL' and tagfilter=='ALL':
+                if (location.lower() == cityfilter):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
-            elif cityfilter==None and mentionfilter!=None and tagfilter==None:
-                if (mentionfilter in mentions):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
-            elif cityfilter==None and mentionfilter==None and tagfilter!=None:
-                if (tagfilter in tags):
+            elif cityfilter=='ALL' and mentionfilter!='ALL' and tagfilter=='ALL':
+                if (mentionfilter.lower() in mentions):
+                    msgs.append(f"[{author}] {content} ({location.lower()} - {timestamp})")
+            elif cityfilter=='ALL' and mentionfilter=='ALL' and tagfilter!='ALL':
+                if (tagfilter.lower() in tags):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
             else:
                 msgs.append(f"[{author}] {content} ({location} - {timestamp})")
@@ -160,22 +177,27 @@ def batch_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
             print(f"Offset for times: {l}")
         c.close()
         # finally return dictonary of messages
+        print(msgs)
         return {"results": msgs}
     else:
         return {"results": ['Oooops, your are not logged in...']}
 
 # Streaming (with filters) URL
-@app.route('/tweets/cityfilter=<cityfilter>&mentionfilter=<mentionfilter>&tagfilter=<tagfilter>', methods=['POST'])
-@app.route('/tweets/mentionfilter=<mentionfilter>&tagfilter=<tagfilter>', methods=['POST'])
-@app.route('/tweets/cityfilter=<cityfilter>&mentionfilter=<mentionfilter>', methods=['POST'])
-@app.route('/tweets/cityfilter=<cityfilter>&tagfilter=<tagfilter>', methods=['POST'])
-@app.route('/tweets/cityfilter=<cityfilter>', methods=['POST'])
-@app.route('/tweets/mentionfilter=<mentionfilter>', methods=['POST'])
-@app.route('/tweets/tagfilter=<tagfilter>', methods=['POST'])
-@app.route('/tweets/nofilters', methods=['GET'])
-def streaming_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
+@app.route('/tweets/streaming', methods=['POST'])
+def streaming_filtering():
+    cityfilter = request.form['cityfilter'].lower()
+    mentionfilter = request.form['mentionfilter'].lower()
+    tagfilter = request.form['tagfilter'].lower()
+
+    # if no filter is applied, select all city/mention/tag
+    if cityfilter=='':
+        cityfilter = 'ALL'
+    if mentionfilter=='':
+        mentionfilter = 'ALL'
+    if tagfilter=='':
+        tagfilter = 'ALL'
+
     if 'username' in request.cookies:
-        # TODO ... chunked
         username = request.cookies['username']
         print(f"Ok, {username}, let's stream the latest tweets!")
         c = AvroConsumer(
@@ -220,7 +242,6 @@ def streaming_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
                     print("AvroConsumer error: {}".format(msg.error()))
                     continue
 
-                print('booh')
                 # get message fields
                 author = msg.value()['author']
                 content = msg.value()['content']
@@ -236,33 +257,33 @@ def streaming_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
                 print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, high_offset)])}")
                 pos = c.position([TopicPartition(TOPIC, 0, high_offset)])
 
-                if cityfilter!=None and mentionfilter!=None and tagfilter!=None:
-                    if (location == cityfilter) and (mentionfilter in mentions) and (tagfilter in tags):
+                if cityfilter!="ALL" and mentionfilter!="ALL" and tagfilter!="ALL":
+                    if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
-                elif cityfilter==None and mentionfilter!=None and tagfilter!=None:
-                    if (mentionfilter in mentions) and (tagfilter in tags):
+                elif cityfilter=="ALL" and mentionfilter!="ALL" and tagfilter!="ALL":
+                    if (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
-                elif cityfilter!=None and mentionfilter==None and tagfilter!=None:
-                    if (location == cityfilter) and (tagfilter in tags):
+                elif cityfilter!="ALL" and mentionfilter=="ALL" and tagfilter!="ALL":
+                    if (location.lower() == cityfilter) and (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
-                elif cityfilter!=None and mentionfilter!=None and tagfilter==None:
-                    if (location == cityfilter) and (mentionfilter in mentions):
+                elif cityfilter!="ALL" and mentionfilter!="ALL" and tagfilter=="ALL":
+                    if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions):
                         msgs.append((display_message,message_ts))
-                elif cityfilter!=None and mentionfilter==None and tagfilter==None:
-                    if (location == cityfilter):
+                elif cityfilter!="ALL" and mentionfilter=="ALL" and tagfilter=="ALL":
+                    if (location.lower() == cityfilter):
                         msgs.append((display_message,message_ts))
-                elif cityfilter==None and mentionfilter!=None and tagfilter==None:
-                    if (mentionfilter in mentions):
+                elif cityfilter=="ALL" and mentionfilter!="ALL" and tagfilter=="ALL":
+                    if (mentionfilter.lower() in mentions):
                         msgs.append((display_message,message_ts))
-                elif cityfilter==None and mentionfilter==None and tagfilter!=None:
-                    if (tagfilter in tags):
+                elif cityfilter=="ALL" and mentionfilter=="ALL" and tagfilter!="ALL":
+                    if (tagfilter.lower() in tags):
                         msgs.append((display_message,message_ts))
                 else:
                     msgs.append((display_message,message_ts))
 
                 # remove old messages
                 current_ts = time.time()
-                msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<10]
+                msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<STREAMING_WINDOW_SECONDS]
                 ret_msgs = [m[0] for m in msgs]
                 yield f' `{json.dumps(ret_msgs)}` '
 
@@ -291,4 +312,4 @@ def streamed_response():
     return Response(stream_with_context(generate(msg)))
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port='5000')
+    app.run(host='127.0.0.1', port='5000', debug=True)

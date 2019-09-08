@@ -7,10 +7,9 @@ import time
 import multiprocessing
 
 class Threading(object):
-    def __init__(self):
-        self.output_topic = 'test_kf_s'
-        self.msg_list = []
-        self.thread = multiprocessing.Process(target=self.streaming, args=())
+    def __init__(self, request):
+        self.r = request
+        self.thread = threading.Thread(target=self.streaming, args=())
         self.thread.daemon = True
         self.thread.start()
 
@@ -27,33 +26,23 @@ class Threading(object):
             return self.msg_list
 
     def streaming(self):
-        s = requests.Session() # session creation
+        msg_string = ""
+        # the entire msg list to display
+        # this one is useful to split the strings finding starting and final byte
+        is_start=True
+        for c in self.r.iter_content(decode_unicode=True):
+            if (c):
+                if str(c) =='`' and is_start==True:
+                    msg_string =''
+                    is_start = False
+                elif str(c) =='`' and is_start==False:
+                    msgs = json.loads(msg_string) # bc it's a string representation of a list
+                    self._destroy_msg_list()
+                    for m in msgs:
+                        self.msg_list.insert('end',m)
+                    self.msg_list.pack(pady=5)
+                    is_start=True
+                else:
+                    msg_string += str(c)
 
-        def filtering(city = None):
-            query = f"SELECT author, content, timestamp FROM {self.output_topic}"
-            if city:
-                query = query + f" WHERE location LIKE '{city}'"
-            query = query +f';'
-            payload = {
-                        "ksql": f'{query}',
-                        "streamsProperties": {}
-                        }
-            headers = {"Content-Type" : "application/vnd.ksql.v1+json; charset=utf-8"}
-            req = requests.Request("POST","http://localhost:8088/query",
-                                   headers=headers,
-                                   data=json.dumps(payload)).prepare()
-
-            resp = s.send(req, stream=True)
-            for line in resp.iter_lines(decode_unicode=True):
-                if line:
-                    yield(json.loads(line))
-
-
-        def read_stream():
-            for line in filtering('Firenze'):
-                author = line['row']['columns'][0]
-                content = line['row']['columns'][1]
-                timestamp = line['row']['columns'][2] # datetime.datetime.fromtimestamp(float(line['row']['columns'][2])).strftime('%H:%M:%S, %d-%m-%Y')
-                self.msg_list.append([author,content,timestamp])
-
-        read_stream()
+self.thread = threading.Thread(target=self.streaming, args=(r,))

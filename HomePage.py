@@ -35,31 +35,20 @@ class HomePage(tk.Frame):
             self.user_id = self.controller.get_user_id()
 
             # label
-            font = tkfont.Font(family='Helvetica', size=25)
-            label = tk.Label(self, text=f"What do you want to do, {self.controller.user_id}?", height='3',font=font, background=self.twitter_blue)
+            font = tkfont.Font(family='Helvetica', size=25, weight='bold')
+            label = tk.Label(self, text=f"What do you want to do, {self.controller.user_id}?", height='3', fg='white',font=font, background=self.twitter_blue)
             label.pack(side="top", fill='both')
 
             # read mode button
             read_button = tk.Button(self, text="Read", command=self._read, height="2", width="30").pack(pady=(30,5))
-            # filtering options
-            """
-            city_label_read = tk.Label(self, text="City Filter:", font=self.controller.title_font).pack(side="top", fill="x", pady=5)
-            self.city_box_read = tk.Entry(self,width=20)
-            self.city_box_read.pack()
-            """
+
             # streaming mode button
             streaming_button = tk.Button(self, text="Streaming", command=self._streaming, height="2", width="30").pack(pady=5)
-            # filtering options
-            """
-            city_label_streaming = tk.Label(self, text="City Filter:", font=self.controller.title_font).pack(side="top", fill="x", pady=5)
-            self.city_box_streaming = tk.Entry(self,width=20)
-            self.city_box_streaming.pack()
-            """
+
             # write mode button
             write_button = tk.Button(self, text="Write", command=self._write, height="2", width="30").pack(pady=5)
 
             # carica logo
-
             img = Image.open("logo.jpg")
             w,h = img.size
             img_resized = img.resize((w//3,h//3), Image.ANTIALIAS)

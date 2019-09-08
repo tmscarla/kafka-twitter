@@ -25,7 +25,7 @@ def _reverseGeocode():
     result = rg.search(coordinates)
     # result is a list containing ordered dictionary
     return f"{result[0]['name']}, {result[0]['cc']}"
-location = 'Milano'
+location = 'Firenze'
 specific_url = 'tweet'
 for i in range(5):
     id = i

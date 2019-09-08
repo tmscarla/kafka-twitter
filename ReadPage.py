@@ -37,8 +37,6 @@ class ReadPage(tk.Frame):
         self.msg_list = tk.Listbox(self, height="70",width="50",yscrollcommand = self.scrollbar.set)
         self.scrollbar.config(command = self.msg_list.yview )
 
-
-
     def _on_first_show_frame(self, event):
         if self.n_times_shown == 0:
             self.user_id = self.controller.get_user_id()
@@ -51,9 +49,23 @@ class ReadPage(tk.Frame):
             self.n_times_shown =-1
 
     def _read(self):
-        self._clear_text()
         self._destroy_msg_list()
-        req_url = self.base_read_url + '/nofilters/latest'
+
+        # convert all to lower case
+        c_filter = self.cf.get().lower()
+        m_filter = self.mf.get().lower()
+        t_filter = self.tf.get().lower()
+
+        # if no filter is applied, select all city/mention/tag
+        if c_filter=='':
+            c_filter = 'ALL'
+        if m_filter=='':
+            m_filter = 'ALL'
+        if t_filter=='':
+            t_filter = 'ALL'
+
+        req_url = self.base_read_url + f'/cityfilter={c_filter}&mentionfilter={m_filter}&tagfilter={t_filter}/latest'
+
         cookies={'username': self.controller.get_user_id()}
         r = requests.get(req_url, cookies=cookies)
         msgs = []
@@ -62,7 +74,7 @@ class ReadPage(tk.Frame):
 
         for m in msgs:
             self.msg_list.insert('end',m) # 'end' per metterlo infondo
-
+        self._clear_text()
         self.msg_list.pack(pady=5)
 
 
