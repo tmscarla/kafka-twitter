@@ -12,13 +12,25 @@ class ReadPage(tk.Frame):
         self.pages = controller.get_frames() # prende le pagine
         self.controller = controller
 
+        # base url
+        self.base_read_url = 'http://127.0.0.1:5000/tweets'
         # user creation
-        # it does the following:
-        # the first time that the page is shown, it triggers a funciton that
-        # gets the user's username
-        self.twitter_user = None
+        self.user_id = None
         self.n_times_shown = 0 # we'll use this to trigger the creation of the User at start
         self.bind("<<ShowFrame>>", self._on_first_show_frame) # binda all'evento, serve per dire quando viene mostrata
+        # filter entries
+        city_label = tk.Label(self,text="city filter:", font=self.controller.title_font).pack(side="top")
+        self.cf = tk.Entry(self, width=20)
+        self.cf.pack()
+
+        mention_label = tk.Label(self,text="mention filter:", font=self.controller.title_font).pack(side="top")
+        self.mf = tk.Entry(self, width=20)
+        self.mf.pack()
+
+        tag_label = tk.Label(self,text="tag filter:", font=self.controller.title_font).pack(side="top")
+        self.tf = tk.Entry(self, width=20)
+        self.tf.pack()
+
         # scrollbar
         self.scrollbar =  tk.Scrollbar(self)
         self.scrollbar.pack(side = 'left', fill='y')
@@ -29,25 +41,30 @@ class ReadPage(tk.Frame):
 
     def _on_first_show_frame(self, event):
         if self.n_times_shown == 0:
-            self.twitter_user = self.controller.get_twitter_user()
+            self.user_id = self.controller.get_user_id()
 
             # label
-            label = tk.Label(self, text=f"{self.twitter_user.get_username()}, these are the latest tweets", font=self.controller.title_font)
+            label = tk.Label(self, text=f"{self.user_id}, apply filters and start reading!", font=self.controller.title_font)
             label.pack(side="top", fill="x", pady=10)
-
+            fetch = tk.Button(self, text="Read Messages!", command=self._read, height="2", width="30").pack()
             back_btn = tk.Button(self, text="<- Back to Home", command=self._back_to_home, height="2", width="30").pack()
             self.n_times_shown =-1
 
-        msgs = self.twitter_user.get_message()
+    def _read(self):
+        self._clear_text()
+        self._destroy_msg_list()
+        req_url = self.base_read_url + '/nofilters/latest'
+        cookies={'username': self.controller.get_user_id()}
+        r = requests.get(req_url, cookies=cookies)
+        msgs = []
+        for m in r.json()['results']:
+            msgs.append(m)
 
         for m in msgs:
-            # transform timestamp to a better readable format
-            msg_ts = datetime.datetime.fromtimestamp(float(m['value']['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
-            display_msg = f"[{m['value']['author']}]: {m['value']['content']} ({m['value']['location']} - {msg_ts})"
-            self.msg_list.insert(0,display_msg)
-            self.msg_list.insert(0,"=====================================================")
+            self.msg_list.insert('end',m) # 'end' per metterlo infondo
 
-        self.msg_list.pack(pady=5)#(side = 'right', fill='both', pady=10)
+        self.msg_list.pack(pady=5)
+
 
     def _destroy_msg_list(self):
         self.msg_list.delete('0', 'end')
@@ -56,3 +73,9 @@ class ReadPage(tk.Frame):
         print('Back to Home.')
         self.controller.show_frame("HomePage")
         self._destroy_msg_list()
+        self._clear_text()
+
+    def _clear_text(self):
+        self.cf.delete(0, 'end')
+        self.tf.delete(0, 'end')
+        self.mf.delete(0, 'end')

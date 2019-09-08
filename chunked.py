@@ -1,32 +1,35 @@
 import requests
 import json
-"""
-def gen():
-    base_url = 'http://10.0.0.17:5000/time'
-    r = requests.get(base_url, stream=True)
-    buffer=""
-    for chunk in r.iter_content(chunk_size=1):
-        str_chunk = str(chunk)
-        if str_chunk.endswith('\n'):
-            buffer += str(chunk)
-            yield(buffer)
-            buffer = ""
-        else:
-            buffer += str(chunk)
+import time
 
-for raw in gen():
-    print(raw)
-    try:
-        boh = json.loads(raw)
-        print(boh)
-    except ValueError as e:
-        print(e)
-        continue
-"""
-base_url = 'http://127.0.0.1:5000/time'
-r = requests.get(base_url, stream=True)
-all_messages = []
-for chunk in r.iter_content(decode_unicode=True):
-    print(chunk)
-    all_messages += str(chunk)
-    print(all_messages)
+
+# session creation
+s = requests.Session()
+
+# subscribe + cookie creation
+base_url = 'http://127.0.0.1:5000/'
+specific_url = 'users/id'
+id = 'l'
+data = {'id':id}
+cookies={'username': id}
+r = requests.post(base_url+specific_url,data=data)
+print(r.text)
+
+r = requests.get('http://127.0.0.1:5000/tweets/nofilters', cookies=cookies, stream=True)
+msg_string = ""
+msg_list = []
+
+is_start=True
+for c in r.iter_content(decode_unicode=True):
+    ts = time.time()
+    if (c):
+        if str(c) =='`' and is_start==True:
+            msg_string =''
+            is_start = False
+        elif str(c) =='`' and is_start==False:
+            print(msg_string)
+            is_start=True
+        else:
+            msg_string += str(c)
+    else:
+        print('===')

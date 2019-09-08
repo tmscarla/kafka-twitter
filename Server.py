@@ -12,11 +12,11 @@ from confluent_kafka.avro.serializer import SerializerError
 from confluent_kafka import TopicPartition
 import time
 import datetime
-
+from flask import stream_with_context, request, Response
 
 # defaults
 TOPIC = 'start6'
-BOOTSTRAP_SERVERS = '10.0.0.17:9092'#'10.0.0.6:9092, 10.0.0.4:9092'
+BOOTSTRAP_SERVERS = 'localhost:9092'#'10.0.0.6:9092, 10.0.0.4:9092'
 SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081'
 KEY_SCHEMA = avro.loads(open('key_schema.avsc', 'r', newline='').read())
 VALUE_SCHEMA = avro.loads(open('tweet_schema_3.avsc', 'r', newline='').read())
@@ -156,6 +156,8 @@ def batch_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
                     msgs.append(f"[{author}] {content} ({location} - {timestamp})")
             else:
                 msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+            l = c.offsets_for_times([TopicPartition(TOPIC, 0)], 10)
+            print(f"Offset for times: {l}")
         c.close()
         # finally return dictonary of messages
         return {"results": msgs}
@@ -170,22 +172,123 @@ def batch_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
 @app.route('/tweets/cityfilter=<cityfilter>', methods=['POST'])
 @app.route('/tweets/mentionfilter=<mentionfilter>', methods=['POST'])
 @app.route('/tweets/tagfilter=<tagfilter>', methods=['POST'])
-@app.route('/tweets/nofilters', methods=['POST'])
-def streaming_filtering():
+@app.route('/tweets/nofilters', methods=['GET'])
+def streaming_filtering(cityfilter=None, mentionfilter=None, tagfilter=None):
     if 'username' in request.cookies:
-        username = request.cookies['username']
         # TODO ... chunked
+        username = request.cookies['username']
+        print(f"Ok, {username}, let's stream the latest tweets!")
+        c = AvroConsumer(
+            {
+            'bootstrap.servers': BOOTSTRAP_SERVERS,
+            'group.id': username,
+            'schema.registry.url': SCHEMA_REGISTRY_URL
+            }
+        )
+        c.assign([TopicPartition(TOPIC, 0,0)])
+        low_offset, high_offset = c.get_watermark_offsets(TopicPartition(TOPIC, 0))
+        print(f"the latest offset is {high_offset}, the low is {low_offset}")
+        print(f"consumer position: {c.position([TopicPartition(TOPIC, 0)])}")
+
+        # move consumer to top
+        c.seek(TopicPartition(TOPIC, 0, high_offset))
+
+        msgs = []
+        pos = c.position([TopicPartition(TOPIC, 0, high_offset)])
+        def gen(msgs): # generator funciton for streaming
+            print('ciao')
+            while True:
+                try:
+                    msg = c.poll(1)
+
+                except SerializerError as e:
+                    print("Message deserialization failed for {}: {}".format(msg, e))
+                    break
+
+                if msg is None:
+                    current_ts = time.time()
+                    msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<10]
+                    ret_msgs = [m[0] for m in msgs]
+                    yield f' `{json.dumps(ret_msgs)}` '
+                    continue
+
+                if msg.error():
+                    current_ts = time.time()
+                    msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<10]
+                    ret_msgs = [m[0] for m in msgs]
+                    yield f' `{json.dumps(ret_msgs)}` '
+                    print("AvroConsumer error: {}".format(msg.error()))
+                    continue
+
+                print('booh')
+                # get message fields
+                author = msg.value()['author']
+                content = msg.value()['content']
+                timestamp = datetime.datetime.fromtimestamp(float(msg.timestamp()[1]/1000)).strftime('%H:%M:%S, %d-%m-%Y')
+                location = msg.value()['location']
+                tags = [h[1:] for h in content.split() if h.startswith('#')]
+                mentions = [h[1:] for h in content.split() if h.startswith('@')]
+                # create display_message
+                display_message = f"[{author}] {content} ({location} - {timestamp}) mentions: {mentions}"
+                display_message = display_message.replace("`", "'") # serve per leggere lo streaming
+                message_ts = float(msg.timestamp()[1]/1000)
+                print(f"{display_message}")
+                print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, high_offset)])}")
+                pos = c.position([TopicPartition(TOPIC, 0, high_offset)])
+
+                if cityfilter!=None and mentionfilter!=None and tagfilter!=None:
+                    if (location == cityfilter) and (mentionfilter in mentions) and (tagfilter in tags):
+                        msgs.append((display_message,message_ts))
+                elif cityfilter==None and mentionfilter!=None and tagfilter!=None:
+                    if (mentionfilter in mentions) and (tagfilter in tags):
+                        msgs.append((display_message,message_ts))
+                elif cityfilter!=None and mentionfilter==None and tagfilter!=None:
+                    if (location == cityfilter) and (tagfilter in tags):
+                        msgs.append((display_message,message_ts))
+                elif cityfilter!=None and mentionfilter!=None and tagfilter==None:
+                    if (location == cityfilter) and (mentionfilter in mentions):
+                        msgs.append((display_message,message_ts))
+                elif cityfilter!=None and mentionfilter==None and tagfilter==None:
+                    if (location == cityfilter):
+                        msgs.append((display_message,message_ts))
+                elif cityfilter==None and mentionfilter!=None and tagfilter==None:
+                    if (mentionfilter in mentions):
+                        msgs.append((display_message,message_ts))
+                elif cityfilter==None and mentionfilter==None and tagfilter!=None:
+                    if (tagfilter in tags):
+                        msgs.append((display_message,message_ts))
+                else:
+                    msgs.append((display_message,message_ts))
+
+                # remove old messages
+                current_ts = time.time()
+                msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<10]
+                ret_msgs = [m[0] for m in msgs]
+                yield f' `{json.dumps(ret_msgs)}` '
+
+        return Response(stream_with_context(gen(msgs)))
     else:
         return {"results": ['Oooops, your are not logged in...']}
 
-from flask import stream_with_context, request, Response
 @app.route('/time', methods=['GET'])
 def streamed_response():
-    def generate():
+    msg = []
+    def generate(msg):
+        count = 0
+        window = 5
         while True:
+            count +=1
+            message = str(count)
+            message = message.replace("`", "'")
+            msg.append(message)
             time.sleep(2)
-            yield(json.dumps(123))
-    return Response(stream_with_context(generate()))
+            #for i in msg:
+            #    print(i)
+            #    yield json.dumps(f"`{i}`")
+            msg = [x for x in msg if int(x)>len(msg)-window]
+            print(json.dumps(msg))
+            yield f' `{json.dumps(msg)}` '
+    return Response(stream_with_context(generate(msg)))
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port='5000')

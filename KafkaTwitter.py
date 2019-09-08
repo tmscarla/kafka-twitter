@@ -23,10 +23,9 @@ class KafkaTwitter(tk.Tk):
         container.pack(side="top", fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
-        # twitter user
-        self.twitter_user = None
-        self.topic = 'test_kt'
-        self.streaming_topic = 'streamingprova2'
+        # username
+        self.user_id = None
+        self.session = None
         # per controllare quale pagina è mostrata
         self.frames = {}
         for F in (LoginPage, HomePage, WritePage, ReadPage, StreamingKSQL):
@@ -47,11 +46,17 @@ class KafkaTwitter(tk.Tk):
         frame.update()
         frame.event_generate("<<ShowFrame>>")
 
-    def set_twitter_user(self,tu):
-        self.twitter_user = tu
+    def set_user_id(self,ui):
+        self.user_id = ui
 
-    def get_twitter_user(self):
-        return self.twitter_user
+    def get_user_id(self):
+        return self.user_id
+
+    def set_session(self,s):
+        self.session = s
+
+    def get_session(self,s):
+        return self.session
 
     def get_frames(self):
         return self.frames
