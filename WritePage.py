@@ -5,12 +5,14 @@ import json
 from tkinter import messagebox
 import geocoder
 import reverse_geocoder as rg
+from tkinter import font  as tkfont
 import time
 
 class WritePage(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        self.twitter_blue = '#%02x%02x%02x' % (68,162,242)
         self.pages = controller.get_frames() # prende le pagine
         self.controller = controller
 
@@ -27,12 +29,13 @@ class WritePage(tk.Frame):
         if self.n_times_shown == 0:
             self.user_id = self.controller.get_user_id()
 
-            # label
-            label = tk.Label(self, text=f"What's happening, {self.user_id}?", font=self.controller.title_font)
-            label.pack(side="top", fill="x", pady=10)
+            # label
+            font = tkfont.Font(family='Helvetica', size=25, weight='bold')
+            label = tk.Label(self, text=f"What's happening, {self.controller.user_id}?", wraplength=400, height='3', fg='white',font=font, background=self.twitter_blue)
+            label.pack(side="top", fill='both')
             # text entry
             self.tweet_txt = tk.Entry(self,width=20)
-            self.tweet_txt.pack()
+            self.tweet_txt.pack(pady=50)
             # publish button
             publish_btn = tk.Button(self, text="Publish!", command=self._publish, height="2", width="30").pack()
             back_btn = tk.Button(self, text="<- Back to Home", command=self._back_to_home, height="2", width="30").pack()
@@ -48,10 +51,9 @@ class WritePage(tk.Frame):
                 'timestamp': time.time(),
                 'location': random.choice(self.location_list)
             }
+            cookies={'username': self.user_id}
+            r = requests.post("http://127.0.0.1:5000/tweet", data=payload, cookies=cookies)
 
-            r = requests.post("http://127.0.0.1:5000/tweet", data=payload)
-
-            print('Tweet published!')
             self.controller.show_frame("HomePage")
             self._clear_text()
         else:

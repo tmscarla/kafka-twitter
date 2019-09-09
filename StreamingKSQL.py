@@ -5,6 +5,7 @@ import json
 import datetime
 from tkinter import messagebox
 import time
+from tkinter import font  as tkfont
 
 class StreamingKSQL(tk.Frame):
 
@@ -12,6 +13,7 @@ class StreamingKSQL(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.pages = controller.get_frames() # prende le pagine
         self.controller = controller
+        self.twitter_blue = '#%02x%02x%02x' % (68,162,242)
         self.is_shown = False
         # default no filters
         self.cityfilter = 'ALL'
@@ -29,15 +31,15 @@ class StreamingKSQL(tk.Frame):
         self.bind("<<ShowFrame>>", self._on_first_show_frame) # binda all'evento, serve per dire quando viene mostrata
 
         # filter entries
-        city_label = tk.Label(self,text="city filter:", font=self.controller.title_font).pack(side="top")
+        city_label = tk.Label(self,text="If you want, insert a city filter:", font=self.controller.title_font).pack(side="top")
         self.cf = tk.Entry(self, width=20)
         self.cf.pack()
 
-        mention_label = tk.Label(self,text="mention filter:", font=self.controller.title_font).pack(side="top")
+        mention_label = tk.Label(self,text="If you want, insert a mention filter (without @):", font=self.controller.title_font).pack(side="top")
         self.mf = tk.Entry(self, width=20)
         self.mf.pack()
 
-        tag_label = tk.Label(self,text="tag filter:", font=self.controller.title_font).pack(side="top")
+        tag_label = tk.Label(self,text="If you want, insert a tag filter (without #):", font=self.controller.title_font).pack(side="top")
         self.tf = tk.Entry(self, width=20)
         self.tf.pack()
 
@@ -55,8 +57,10 @@ class StreamingKSQL(tk.Frame):
             self.user_id = self.controller.get_user_id()
 
             # label
-            label = tk.Label(self, text=f"{self.user_id}, these are the latest tweets", font=self.controller.title_font)
-            label.pack(side="top", fill="x", pady=10)
+            # label
+            font = tkfont.Font(family='Helvetica', size=15, weight='bold')
+            label = tk.Label(self, text=f"Press the below buttons to start/stop streaming!", wraplength=400, height='3', fg='white',font=font, background=self.twitter_blue)
+            label.pack(side="top", fill='both')
             self.stream_btn = tk.Button(self, text="Read Messages!", command=self._stream, height="2", width="30")
             self.stream_btn.pack()
             stop_stream = tk.Button(self, text="Stop stream & Create a new one!", command=self._stop_stream, height="2", width="30").pack()
@@ -143,12 +147,13 @@ class StreamingKSQL(tk.Frame):
             for m in self.msg_to_show:
                 self.msg_list.insert('end',m)
             self.msg_list.pack(pady=5)
-            self.after(1000, self._display_msg)
+            self.after(2000, self._display_msg)
 
     def _destroy_msg_list(self):
         self.msg_list.delete('0', 'end')
 
     def _back_to_home(self):
         self.is_shown = False
+        self._destroy_msg_list()
         print('Back to Home.')
         self.controller.show_frame("HomePage")

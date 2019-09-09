@@ -36,7 +36,7 @@ class HomePage(tk.Frame):
 
             # label
             font = tkfont.Font(family='Helvetica', size=25, weight='bold')
-            label = tk.Label(self, text=f"What do you want to do, {self.controller.user_id}?", height='3', fg='white',font=font, background=self.twitter_blue)
+            label = tk.Label(self, text=f"What do you want to do, {self.controller.user_id}?", wraplength=400,height='3', fg='white',font=font, background=self.twitter_blue)
             label.pack(side="top", fill='both')
 
             # read mode button

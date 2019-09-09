@@ -15,13 +15,13 @@ import datetime
 from flask import stream_with_context, request, Response
 
 # defaults
-TOPIC = 'esame4'
+TOPIC = 'esame5'
 BOOTSTRAP_SERVERS = 'localhost:9092' #'10.0.0.17:9092, 10.0.0.6:9092, 10.0.0.4:9092'
 SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081' #'http://10.0.0.17:8081' #'http://127.0.0.1:8081'
 KEY_SCHEMA = avro.loads(open('key_schema.avsc', 'r', newline='').read())
 VALUE_SCHEMA = avro.loads(open('tweet_avro_schema.avsc', 'r', newline='').read())
-WINDOW_LEN = 20
-STREAMING_WINDOW_SECONDS = 10
+WINDOW_LEN = 30
+STREAMING_WINDOW_SECONDS = 30
 
 # Subscription URL
 @app.route('/users/id', methods=['POST'])
@@ -36,7 +36,8 @@ def subscribe():
         }
     )
     # assign the partition
-    c.assign([TopicPartition(TOPIC, 0,0)])
+    c.subscribe([TOPIC])
+    #c.assign([TopicPartition(TOPIC, 0,0)])
     print(f"Assignments: {c.assignment()}")
 
     return f"Logged in as {id}"
@@ -44,32 +45,35 @@ def subscribe():
 # Publish URL
 @app.route('/tweet', methods=['POST'])
 def produce_tweet():
-    id = request.form['id']
-    content = request.form['content']
-    location = request.form['location']
-    # extract tags and mentions :)
-    tags = [h for h in content.split() if h.startswith('#')]
-    mentions = [h for h in content.split() if h.startswith('@')]
+    if 'username' in request.cookies:
+        id = request.form['id']
+        content = request.form['content']
+        location = request.form['location']
+        # extract tags and mentions :)
+        tags = [h for h in content.split() if h.startswith('#')]
+        mentions = [h for h in content.split() if h.startswith('@')]
 
-    value = {
-        "author": f"{id}",
-        "content": f"{content}",
-        "timestamp": f"{time.time()}",
-        "location": f"{location}",
-        "tags": tags,
-        "mentions": mentions
-    }
-    key = {"name": f"{id}"}
+        value = {
+            "author": f"{id}",
+            "content": f"{content}",
+            "timestamp": f"{time.time()}",
+            "location": f"{location}",
+            "tags": tags,
+            "mentions": mentions
+        }
+        key = {"name": f"{id}"}
 
-    p = AvroProducer({
-        'bootstrap.servers': BOOTSTRAP_SERVERS,
-        'enable.idempotence': 'true', # for EOS: assures that only one tweet in sent
-        'schema.registry.url': SCHEMA_REGISTRY_URL
-        }, default_key_schema=KEY_SCHEMA, default_value_schema=VALUE_SCHEMA)
+        p = AvroProducer({
+            'bootstrap.servers': BOOTSTRAP_SERVERS,
+            'enable.idempotence': 'true', # for EOS: assures that only one tweet in sent
+            'schema.registry.url': SCHEMA_REGISTRY_URL
+            }, default_key_schema=KEY_SCHEMA, default_value_schema=VALUE_SCHEMA)
 
-    p.produce(topic=TOPIC, value=value, key=key)
-    p.flush()
-    return 'Tweet published!'
+        p.produce(topic=TOPIC, value=value, key=key)
+        p.flush()
+        return 'Tweet published!'
+    else:
+        return 'Oooops, your are not logged in...'
 
 
 # Batch (with filtering) URL
@@ -150,8 +154,6 @@ def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
                     msgs.append((display_message,message_ts))
             else:
                 msgs.append((display_message,message_ts))
-            l = c.offsets_for_times([TopicPartition(TOPIC, 0)], 10)
-            print(f"Offset for times: {l}")
         c.close()
         # finally return dictonary of messages
         msgs = list(set(msgs)) # this is done to ensure that no duplicates of a message are shown in timeline
@@ -204,14 +206,14 @@ def streaming_filtering():
 
                 if msg is None:
                     current_ts = time.time()
-                    msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<10]
+                    msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<STREAMING_WINDOW_SECONDS]
                     ret_msgs = [m[0] for m in msgs]
                     yield f' `{json.dumps(ret_msgs)}` '
                     continue
 
                 if msg.error():
                     current_ts = time.time()
-                    msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<10]
+                    msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<STREAMING_WINDOW_SECONDS]
                     ret_msgs = [m[0] for m in msgs]
                     yield f' `{json.dumps(ret_msgs)}` '
                     print("AvroConsumer error: {}".format(msg.error()))
@@ -264,7 +266,7 @@ def streaming_filtering():
                 # remove old messages
                 current_ts = time.time()
                 msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<STREAMING_WINDOW_SECONDS]
-                msgs = list(set(msgs))
+                #msgs = list(set(msgs))
                 msgs = sorted(msgs, key=lambda x: x[1])
                 ret_msgs = [m[0] for m in msgs]
                 yield f' `{json.dumps(ret_msgs)}` '

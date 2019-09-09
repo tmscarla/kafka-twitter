@@ -18,15 +18,15 @@ class ReadPage(tk.Frame):
         self.n_times_shown = 0 # we'll use this to trigger the creation of the User at start
         self.bind("<<ShowFrame>>", self._on_first_show_frame) # binda all'evento, serve per dire quando viene mostrata
         # filter entries
-        city_label = tk.Label(self,text="city filter:", font=self.controller.title_font).pack(side="top")
+        city_label = tk.Label(self,text="If you want, insert a city filter:", font=self.controller.title_font).pack(side="top")
         self.cf = tk.Entry(self, width=20)
         self.cf.pack()
 
-        mention_label = tk.Label(self,text="mention filter:", font=self.controller.title_font).pack(side="top")
+        mention_label = tk.Label(self,text="If you want, insert a mention filter (without @):", font=self.controller.title_font).pack(side="top")
         self.mf = tk.Entry(self, width=20)
         self.mf.pack()
 
-        tag_label = tk.Label(self,text="tag filter:", font=self.controller.title_font).pack(side="top")
+        tag_label = tk.Label(self,text="If you want, insert a tag filter (without #):", font=self.controller.title_font).pack(side="top")
         self.tf = tk.Entry(self, width=20)
         self.tf.pack()
 
@@ -41,7 +41,7 @@ class ReadPage(tk.Frame):
             self.user_id = self.controller.get_user_id()
 
             # label
-            label = tk.Label(self, text=f"{self.user_id}, apply filters and start reading!", font=self.controller.title_font)
+            label = tk.Label(self, text=f"Apply filters and start reading!", font=self.controller.title_font)
             label.pack(side="top", fill="x", pady=10)
             fetch = tk.Button(self, text="Read Messages!", command=self._read, height="2", width="30").pack()
             back_btn = tk.Button(self, text="<- Back to Home", command=self._back_to_home, height="2", width="30").pack()
