@@ -19,13 +19,13 @@ class StreamingKSQL(tk.Frame):
         self.tagfilter = 'ALL'
         # messages to show
         self.msg_to_show = []
-        self.t = threading.Thread(target = self._stream_response, args = ())
-        self.t.daemon = True
         # user creation
         self.user_id = None
         self.streaming_url = 'http://127.0.0.1:5000/tweets/streaming'
         self.n_times_shown = 0 # we'll use this to trigger the creation of the User at start
         self.is_first_req = True # we'll use it to start the thread: threads cannot be restarted!
+        self.new_stream_req = False # if new request, abort previous stream
+        self.stream_stopped = True
         self.bind("<<ShowFrame>>", self._on_first_show_frame) # binda all'evento, serve per dire quando viene mostrata
 
         # filter entries
@@ -57,13 +57,29 @@ class StreamingKSQL(tk.Frame):
             # label
             label = tk.Label(self, text=f"{self.user_id}, these are the latest tweets", font=self.controller.title_font)
             label.pack(side="top", fill="x", pady=10)
-            stream = tk.Button(self, text="Read Messages!", command=self._stream, height="2", width="30").pack()
+            self.stream_btn = tk.Button(self, text="Read Messages!", command=self._stream, height="2", width="30")
+            self.stream_btn.pack()
+            stop_stream = tk.Button(self, text="Stop stream & Create a new one!", command=self._stop_stream, height="2", width="30").pack()
             back_btn = tk.Button(self, text="<- Back to Home", command=self._back_to_home, height="2", width="30").pack()
+
             self.n_times_shown =-1
 
         self.is_shown = True
+        self.new_stream_req = False
+
+    def _stop_stream(self):
+        self.stream_stopped = True
+
+    def _disable_read_button(self):
+        # this is done at requesting
+        self.stream_btn.config(state="disabled")
+
+    def _enable_read_button(self):
+        # this is done at end request
+        self.stream_btn.config(state="active")
 
     def _stream(self):
+        self._disable_read_button()
         self._destroy_msg_list()
 
         # convert all to lower case
@@ -79,10 +95,47 @@ class StreamingKSQL(tk.Frame):
         if self.tagfilter=='':
             self.tagfilter = 'ALL'
 
-        if self.is_first_req:
-            self.t.start()
-            self.is_first_req = False
+        self.stream_stopped = False
+        self.new_stream_req = True
+        t = threading.Thread(target = self._stream_response, args = ())
+        t.daemon = True
+        t.start()
         self._display_msg()
+
+    def _stream_response(self):
+            # checks to stop the thread job
+            payload = {
+                'cityfilter': self.cityfilter,
+                'mentionfilter': self.mentionfilter,
+                'tagfilter': self.tagfilter
+            }
+
+            print(f'payload {payload}')
+
+            cookies={'username': self.user_id}
+            r = requests.post(self.streaming_url, data=payload, cookies=cookies, stream=True)
+            msg_string = ""
+            msg_list = []
+
+            is_start=True
+            for c in r.iter_content(decode_unicode=True):
+                if self.is_shown and self.new_stream_req and not self.stream_stopped:
+                    if (c):
+                        if str(c) =='`' and is_start==True:
+                            msg_string =''
+                            is_start = False
+                        elif str(c) =='`' and is_start==False:
+                            print(json.loads(msg_string))
+                            self.msg_to_show = [x for x in json.loads(msg_string)]
+                            is_start=True
+                        else:
+                            msg_string += str(c)
+                    else:
+                        print('===')
+                else:
+                    break
+            self._enable_read_button()
+            print('STREAMING FINITO!')
 
     def _display_msg(self): # _get_msg_list rescheduled
         if self.is_shown == True: # altrimenti non ha senso che continui a fare richieste
@@ -91,44 +144,11 @@ class StreamingKSQL(tk.Frame):
                 self.msg_list.insert('end',m)
             self.msg_list.pack(pady=5)
             self.after(1000, self._display_msg)
-        print(f'Thead alive: {self.t.isAlive()}')
-
-    def _stream_response(self):
-        payload = {
-            'cityfilter': self.cityfilter,
-            'mentionfilter': self.mentionfilter,
-            'tagfilter': self.tagfilter
-        }
-        cookies={'username': self.user_id}
-
-        r = requests.post(self.streaming_url, data=payload, cookies=cookies, stream=True)
-        msg_string = ""
-        msg_list = []
-
-        is_start=True
-        for c in r.iter_content(decode_unicode=True):
-            if self.is_shown:
-                if (c):
-                    if str(c) =='`' and is_start==True:
-                        msg_string =''
-                        is_start = False
-                    elif str(c) =='`' and is_start==False:
-                        print(json.loads(msg_string))
-                        self.msg_to_show = [x for x in json.loads(msg_string)]
-                        is_start=True
-                    else:
-                        msg_string += str(c)
-                else:
-                    print('===')
-            else:
-                continue
-        print('STREAMING FINITO!')
 
     def _destroy_msg_list(self):
         self.msg_list.delete('0', 'end')
 
     def _back_to_home(self):
         self.is_shown = False
-        print(f'Thead alive: {self.t.isAlive()}')
         print('Back to Home.')
         self.controller.show_frame("HomePage")

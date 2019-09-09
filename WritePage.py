@@ -3,6 +3,8 @@ import random
 import requests
 import json
 from tkinter import messagebox
+import geocoder
+import reverse_geocoder as rg
 
 class WritePage(tk.Frame):
 
@@ -55,6 +57,15 @@ class WritePage(tk.Frame):
 
     def _clear_text(self):
         self.tweet_txt.delete(0, 'end')
+
+    def _reverseGeocode(self): # NOTE: unusable without internet connection...
+        g = geocoder.ip('me')
+        print(g.latlng)
+        # coorinates tuple.Can contain more than one pair.
+        coordinates =(g.latlng[0], g.latlng[1])
+        result = rg.search(coordinates)
+        # result is a list containing ordered dictionary
+        return f"{result[0]['name']}, {result[0]['cc']}"
 
     def _back_to_home(self):
         self.is_shown = False

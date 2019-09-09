@@ -1,5 +1,4 @@
 import tkinter as tk
-from TwitterUser import TwitterUser
 import requests
 import json
 import datetime
