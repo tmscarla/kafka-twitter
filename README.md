@@ -1,6 +1,10 @@
-# Twitter-Kafka Course Project
+<p align="center">
+<img height=180px src="https://github.com/tmscarla/kafka-twitter/blob/master/logo.jpg?raw=true"/>
+</p>
 
-Private repo for the mandatory project for the 2019 **Middleware Technologies** class.
+# Kafka Twitter
+
+Repository for the mandatory project for the 2019 **Middleware Technologies** class.
 
 The purpose of  this project is to implement a simplified version of the Twitter social network using **Apache Kafka** to store tweets. Users interact with Twitter using a client that presents a timeline of tweets and allows users to publish new tweets.</p>
 
