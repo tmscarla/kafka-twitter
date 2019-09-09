@@ -12,7 +12,7 @@ class LoginPage(tk.Frame):
         self.user_id = None
 
         # application login endpoint
-        self.login_url = 'http://127.0.0.1:5000/users/id'
+        self.login_url = 'http://10.0.0.17:5000/users/id'
 
         # basic dummy graphics
         # image rendering

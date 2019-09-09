@@ -47,7 +47,7 @@ class WritePage(tk.Frame):
                 'location': random.choice(self.location_list)
             }
 
-            r = requests.post("http://127.0.0.1:5000/tweet", data=payload)
+            r = requests.post("http://10.0.0.17:5000/tweet", data=payload)
 
             print('Tweet published!')
             self.controller.show_frame("HomePage")

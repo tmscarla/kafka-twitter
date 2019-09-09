@@ -16,8 +16,8 @@ from flask import stream_with_context, request, Response
 
 # defaults
 TOPIC = 'start6'
-BOOTSTRAP_SERVERS = 'localhost:9092'#'10.0.0.6:9092, 10.0.0.4:9092'
-SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081'
+BOOTSTRAP_SERVERS = '10.0.0.17:9092, 10.0.0.6:9092, 10.0.0.4:9092'
+SCHEMA_REGISTRY_URL = 'http://10.0.0.17:8081' #'http://127.0.0.1:8081'
 KEY_SCHEMA = avro.loads(open('key_schema.avsc', 'r', newline='').read())
 VALUE_SCHEMA = avro.loads(open('tweet_schema_3.avsc', 'r', newline='').read())
 WINDOW_LEN = 10
@@ -124,7 +124,7 @@ def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
             location = msg.value()['location']
             tags = [h[1:] for h in content.split() if h.startswith('#')]
             mentions = [h[1:] for h in content.split() if h.startswith('@')]
-            print(f"[{author}] {content} ({location} - {timestamp}) mentions: {mentions}")
+            print(f"[{author}] {content} ({location} - {timestamp})")
             #print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, new_offset)])}")
             pos = c.position([TopicPartition(TOPIC, 0, new_offset)])
 
@@ -269,4 +269,4 @@ def streaming_filtering():
         return {"results": ['Oooops, your are not logged in...']}
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port='5000', debug=True)
+    app.run(host='10.0.0.17', port='5000', debug=True)
