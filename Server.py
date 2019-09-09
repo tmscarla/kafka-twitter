@@ -15,12 +15,12 @@ import datetime
 from flask import stream_with_context, request, Response
 
 # defaults
-TOPIC = 'start6'
-BOOTSTRAP_SERVERS = '10.0.0.17:9092, 10.0.0.6:9092, 10.0.0.4:9092'
-SCHEMA_REGISTRY_URL = 'http://10.0.0.17:8081' #'http://127.0.0.1:8081'
+TOPIC = 'esame4'
+BOOTSTRAP_SERVERS = 'localhost:9092' #'10.0.0.17:9092, 10.0.0.6:9092, 10.0.0.4:9092'
+SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081' #'http://10.0.0.17:8081' #'http://127.0.0.1:8081'
 KEY_SCHEMA = avro.loads(open('key_schema.avsc', 'r', newline='').read())
-VALUE_SCHEMA = avro.loads(open('tweet_schema_3.avsc', 'r', newline='').read())
-WINDOW_LEN = 10
+VALUE_SCHEMA = avro.loads(open('tweet_avro_schema.avsc', 'r', newline='').read())
+WINDOW_LEN = 20
 STREAMING_WINDOW_SECONDS = 10
 
 # Subscription URL
@@ -44,8 +44,6 @@ def subscribe():
 # Publish URL
 @app.route('/tweet', methods=['POST'])
 def produce_tweet():
-    # TODO: metti EOS
-
     id = request.form['id']
     content = request.form['content']
     location = request.form['location']
@@ -56,6 +54,7 @@ def produce_tweet():
     value = {
         "author": f"{id}",
         "content": f"{content}",
+        "timestamp": f"{time.time()}",
         "location": f"{location}",
         "tags": tags,
         "mentions": mentions
@@ -64,8 +63,7 @@ def produce_tweet():
 
     p = AvroProducer({
         'bootstrap.servers': BOOTSTRAP_SERVERS,
-        #'broker.address.family': 'v4',
-        'enable.idempotence': 'true',
+        'enable.idempotence': 'true', # for EOS: assures that only one tweet in sent
         'schema.registry.url': SCHEMA_REGISTRY_URL
         }, default_key_schema=KEY_SCHEMA, default_value_schema=VALUE_SCHEMA)
 
@@ -77,8 +75,6 @@ def produce_tweet():
 # Batch (with filtering) URL
 @app.route('/tweets/cityfilter=<cityfilter>&mentionfilter=<mentionfilter>&tagfilter=<tagfilter>/latest', methods=['GET'])
 def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
-    # TODO: metti auto.commit = True? oppure tracka l'ultimo offset
-
     if 'username' in request.cookies:
         username = request.cookies['username']
         print(f"Ok, {username}, let's fetch the latest tweets!")
@@ -120,41 +116,47 @@ def batch_filtering(cityfilter='ALL', mentionfilter='ALL', tagfilter='ALL'):
 
             author = msg.value()['author']
             content = msg.value()['content']
-            timestamp = datetime.datetime.fromtimestamp(float(msg.timestamp()[1]/1000)).strftime('%H:%M:%S, %d-%m-%Y')
+            #kafka_timestamp = datetime.datetime.fromtimestamp(float(msg.timestamp()[1]/1000)).strftime('%H:%M:%S, %d-%m-%Y')
+            timestamp = datetime.datetime.fromtimestamp(float(msg.value()['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
+            message_ts = float(msg.value()['timestamp'])
             location = msg.value()['location']
             tags = [h[1:] for h in content.split() if h.startswith('#')]
             mentions = [h[1:] for h in content.split() if h.startswith('@')]
+            display_message = f"[{author}] {content} ({location} - {timestamp})"
             print(f"[{author}] {content} ({location} - {timestamp})")
             #print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, new_offset)])}")
             pos = c.position([TopicPartition(TOPIC, 0, new_offset)])
 
             if cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
                 if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             elif cityfilter=='ALL' and mentionfilter!='ALL' and tagfilter!='ALL':
                 if (mentionfilter.lower() in mentions) and (tagfilter.lower() in tags):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             elif cityfilter!='ALL' and mentionfilter=='ALL' and tagfilter!='ALL':
                 if (location.lower() == cityfilter) and (tagfilter.lower() in tags):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             elif cityfilter!='ALL' and mentionfilter!='ALL' and tagfilter=='ALL':
                 if (location.lower() == cityfilter) and (mentionfilter.lower() in mentions):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             elif cityfilter!='ALL' and mentionfilter=='ALL' and tagfilter=='ALL':
                 if (location.lower() == cityfilter):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             elif cityfilter=='ALL' and mentionfilter!='ALL' and tagfilter=='ALL':
                 if (mentionfilter.lower() in mentions):
-                    msgs.append(f"[{author}] {content} ({location.lower()} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             elif cityfilter=='ALL' and mentionfilter=='ALL' and tagfilter!='ALL':
                 if (tagfilter.lower() in tags):
-                    msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                    msgs.append((display_message,message_ts))
             else:
-                msgs.append(f"[{author}] {content} ({location} - {timestamp})")
+                msgs.append((display_message,message_ts))
             l = c.offsets_for_times([TopicPartition(TOPIC, 0)], 10)
             print(f"Offset for times: {l}")
         c.close()
         # finally return dictonary of messages
+        msgs = list(set(msgs)) # this is done to ensure that no duplicates of a message are shown in timeline
+        msgs = sorted(msgs, key=lambda x: x[1])
+        msgs = [m[0] for m in msgs]
         print(msgs)
         return {"results": msgs}
     else:
@@ -218,14 +220,15 @@ def streaming_filtering():
                 # get message fields
                 author = msg.value()['author']
                 content = msg.value()['content']
-                timestamp = datetime.datetime.fromtimestamp(float(msg.timestamp()[1]/1000)).strftime('%H:%M:%S, %d-%m-%Y')
+                #kafka_timestamp = datetime.datetime.fromtimestamp(float(msg.timestamp()[1]/1000)).strftime('%H:%M:%S, %d-%m-%Y')
+                timestamp = datetime.datetime.fromtimestamp(float(msg.value()['timestamp'])).strftime('%H:%M:%S, %d-%m-%Y')
                 location = msg.value()['location']
                 tags = [h[1:] for h in content.split() if h.startswith('#')]
                 mentions = [h[1:] for h in content.split() if h.startswith('@')]
                 # create display_message
-                display_message = f"[{author}] {content} ({location} - {timestamp}) mentions: {mentions}"
+                display_message = f"[{author}] {content} ({location} - {timestamp})"
                 display_message = display_message.replace("`", "'") # serve per leggere lo streaming
-                message_ts = float(msg.timestamp()[1]/1000)
+                message_ts = float(msg.value()['timestamp'])
                 print(f"{display_message}")
                 print(f"consumer position: {c.position([TopicPartition(TOPIC, 0, high_offset)])}")
                 pos = c.position([TopicPartition(TOPIC, 0, high_offset)])
@@ -261,6 +264,8 @@ def streaming_filtering():
                 # remove old messages
                 current_ts = time.time()
                 msgs = [m for m in msgs if (float(current_ts)-float(m[1]))<STREAMING_WINDOW_SECONDS]
+                msgs = list(set(msgs))
+                msgs = sorted(msgs, key=lambda x: x[1])
                 ret_msgs = [m[0] for m in msgs]
                 yield f' `{json.dumps(ret_msgs)}` '
 
@@ -269,4 +274,4 @@ def streaming_filtering():
         return {"results": ['Oooops, your are not logged in...']}
 
 if __name__ == '__main__':
-    app.run(host='10.0.0.17', port='5000', debug=True)
+    app.run(host='127.0.0.1', port='5000', debug=True)

@@ -12,7 +12,7 @@ class ReadPage(tk.Frame):
         self.controller = controller
 
         # base url
-        self.base_read_url = 'http://10.0.0.17:5000/tweets'
+        self.base_read_url = 'http://127.0.0.1:5000/tweets'
         # user creation
         self.user_id = None
         self.n_times_shown = 0 # we'll use this to trigger the creation of the User at start

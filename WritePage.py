@@ -5,6 +5,7 @@ import json
 from tkinter import messagebox
 import geocoder
 import reverse_geocoder as rg
+import time
 
 class WritePage(tk.Frame):
 
@@ -44,10 +45,11 @@ class WritePage(tk.Frame):
             payload = {
                 'id': f'{self.user_id}',
                 'content': self.tweet_txt.get(),
+                'timestamp': time.time(),
                 'location': random.choice(self.location_list)
             }
 
-            r = requests.post("http://10.0.0.17:5000/tweet", data=payload)
+            r = requests.post("http://127.0.0.1:5000/tweet", data=payload)
 
             print('Tweet published!')
             self.controller.show_frame("HomePage")

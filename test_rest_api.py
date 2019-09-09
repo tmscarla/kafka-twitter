@@ -1,7 +1,7 @@
 import requests
 import time
 
-base_url = 'http://127.0.0.1:5000/'
+base_url = 'http://10.0.0.17:5000/'
 """
 # session creation
 s = requests.Session()
@@ -33,6 +33,7 @@ for i in range(5):
     data = {
         'id': i, #questo non deve passarlo
         'content': f'come va? #{i} @ciao',
+        "timestamp": time.time(),
         'location': location
     }
     r = requests.post(base_url+specific_url,data=data)
