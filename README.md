@@ -1,6 +1,10 @@
-# Twitter-Kafka Course Project
+<p align="center">
+<img height=180px src="https://github.com/tmscarla/kafka-twitter/blob/master/logo.jpg?raw=true"/>
+</p>
 
-Private repo for the mandatory project for the 2019 **Middleware Technologies** class.
+# Kafka Twitter
+
+Repository for the mandatory project for the 2019 **Middleware Technologies** class.
 
 The purpose of  this project is to implement a simplified version of the Twitter social network using **Apache Kafka** to store tweets. Users interact with Twitter using a client that presents a timeline of tweets and allows users to publish new tweets.</p>
 
@@ -12,6 +16,7 @@ folder there the scripts used in order to get, clean and prepare the final datas
 2. `topic_extraction.py`: this script extracts the topics from the tweets previously gathered, producing an LDA model that will be used in order to assign a topic to each new tweet in the social network. To performa LDA, we used the very cool free python library [gensim](https://radimrehurek.com/gensim/) together with [nltk](https://www.nltk.org/). A detailed and interesting tutorial can be found in [this article](https://towardsdatascience.com/topic-modelling-in-python-with-nltk-and-gensim-4ef03213cd21).
 3. `categorize_tweets.py`: **(TO BE DONE!!!**) this script assigns to the new tweets a topic based on the previously generated model.
 
+<<<<<<< HEAD
 ## KafkaTwitter
 The scope of the project was to create a dummy version of the popular Twitter social network. In our case, we developed a very simple application that has 3 main components:
 1. `Client`: the user will interact with the app through a basic GUI made with Tkinter
@@ -44,3 +49,6 @@ Edit this properties as you please. The parameters name are pretty self-explanat
 foo@bar:~$ python3 Server.py
 ```
 After a few seconds your Application Server should be running.
+=======
+// TODO
+>>>>>>> d431a6bec5557e45b4a7c141b23b28d6c0a26675
