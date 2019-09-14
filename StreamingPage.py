@@ -7,7 +7,7 @@ from tkinter import messagebox
 import time
 from tkinter import font  as tkfont
 
-class StreamingKSQL(tk.Frame):
+class StreamingPage(tk.Frame):
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -23,7 +23,7 @@ class StreamingKSQL(tk.Frame):
         self.msg_to_show = []
         # user creation
         self.user_id = None
-        self.streaming_url = 'http://127.0.0.1:5000/tweets/streaming' #'http://10.0.0.17:5000/tweets/streaming'
+        self.streaming_url = 'http://10.0.0.17:5000/tweets/streaming' #'http://10.0.0.17:5000/tweets/streaming'
         self.n_times_shown = 0 # we'll use this to trigger the creation of the User at start
         self.is_first_req = True # we'll use it to start the thread: threads cannot be restarted!
         self.new_stream_req = False # if new request, abort previous stream

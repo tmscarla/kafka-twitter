@@ -11,7 +11,7 @@ df_twitter_dataset = df_twitter_dataset.head(100)
 location_list = ['Milano', 'Firenze', 'Roma','Napoli', 'Torino']
 tweet_text = ['NEW FUNCTIONALITY COMING SOON', 'Check it out ->', 'This is awesome!', 'Exam day',
     'Help please...','Am I in a live streaming simulation?', 'Just another day at PoliMi', 'Middleware presentation today :)']
-hashtags = ['#mondayexamday ','#middleware ','#apache ','#kafka ', '#openmp','mpi','#apachekafka ','#confluent ', '#akka ', '#akkaactors ', '#flask ','#python ']
+hashtags = ['#mondayexamday ','#middleware ','#apache ','#kafka ', '#openmp','#mpi','#apachekafka ','#confluent ', '#akka ', '#akkaactors ', '#flask ','#python ']
 mentions = ['@teomore','@alessiorussointroito','@tmscarla','@polimiofficial']
 for t in df_twitter_dataset['user']:
     wait = random.uniform(0, 2)
@@ -22,5 +22,5 @@ for t in df_twitter_dataset['user']:
         "timestamp": time.time(),
         'location': random.choice(location_list)
     }
-    r = requests.post("http://127.0.0.1:5000/tweet",data=data)
+    r = requests.post("http://127.0.0.1:5000/tweet",data=data, cookies={'username':'teo'})
     print(r.text)

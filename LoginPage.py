@@ -12,7 +12,7 @@ class LoginPage(tk.Frame):
         self.user_id = None
 
         # application login endpoint
-        self.login_url = 'http://127.0.0.1:5000/users/id' #'http://10.0.0.17:5000/users/id'
+        self.login_url = 'http://127.0.0.1:5000/users/id'
 
         # basic dummy graphics
         # image rendering
@@ -27,15 +27,7 @@ class LoginPage(tk.Frame):
         name_label = tk.Label(self, text="Username:", font=self.controller.title_font).pack(side="top", fill="x", pady=5)
         self.name_box = tk.Entry(self,width=20)
         self.name_box.pack()
-        # TODO: solo se ho tempo, mettere login con password
-        """
-        surname_label = tk.Label(self, text="Surname:", font=controller.title_font).pack(side="top", fill="x", pady=5)
-        self.surname_box = tk.Entry(self,width=20)
-        self.surname_box.pack()
-        psw_label = tk.Label(self, text="Password:", font=controller.title_font).pack(side="top", fill="x", pady=5)
-        self.psw_box = tk.Entry(self,width=20, show='*')
-        self.psw_box.pack()
-        """
+
         submit_btn = tk.Button(self, text="Login",command=self._submit, height="2", width="30").pack(pady=20)
 
     def _submit(self):

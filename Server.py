@@ -16,8 +16,8 @@ from flask import stream_with_context, request, Response
 
 # defaults
 TOPIC = 'esame5'
-BOOTSTRAP_SERVERS = 'localhost:9092' #'10.0.0.17:9092, 10.0.0.6:9092, 10.0.0.4:9092'
-SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081' #'http://10.0.0.17:8081' #'http://127.0.0.1:8081'
+BOOTSTRAP_SERVERS = 'localhost:9092' # this will be distributed...
+SCHEMA_REGISTRY_URL = 'http://127.0.0.1:8081'
 KEY_SCHEMA = avro.loads(open('key_schema.avsc', 'r', newline='').read())
 VALUE_SCHEMA = avro.loads(open('tweet_avro_schema.avsc', 'r', newline='').read())
 WINDOW_LEN = 30

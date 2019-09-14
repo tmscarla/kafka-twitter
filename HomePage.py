@@ -28,7 +28,7 @@ class HomePage(tk.Frame):
 
     def _streaming(self):
         print(f'Ok {self.controller.get_user_id()}, streaming mode!')
-        self.controller.show_frame("StreamingKSQL")
+        self.controller.show_frame("StreamingPage")
 
     def _on_first_show_frame(self, event):
         if self.n_times_shown == 0:
