@@ -23,18 +23,17 @@ The scope of the project was to create a dummy version of the popular Twitter so
 3. `Kafka`: we used Apache Kafka to store the tweets. Our specific setup was made of 1 machine running both Zookeeper and Kafka, and 2 machines as additional Kafka brokers.
 
 ## Get started with KafkaTwitter!
-### Setup Apache Kafka
-First of all, you need Apache Kafka. In order to do so, just follow the simple instructions provided on the [Confluent Platform Quick Start](https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart) page. In a few minutes you should be able download and setup all you need; at that point just open your favorite terminal and run:
+
+### 1. Local setup
+This is the basic setup if you want to run the application on a single machine. In this case your machine will host the client, the AppServer and both Kafka and Zookeeper. If you want to run the application in a distributed scenario, jump to the end of the README.
+
+1. First of all, you need Apache Kafka. In order to do so, just follow the simple instructions provided on the [Confluent Platform Quick Start](https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart) page. In a few minutes you should be able download and setup all you need; at that point just open your favorite terminal and run:
 ```console
 foo@bar:~$ <PATH-TO-CONFLUENT>/bin/confluent local start
 ```
-And that's it with Kafka, as simple as that :-)
+And that's it with Kafka, as simple as that :)
 
-This is the basic setup if you want to run the application on a single machine. In this case your machine will host the client, the AppServer and both Kafka and Zookeeper. If you want to run the application in a distributed scenario, jump to the end of this file.
-### Run the Application Server
-The Application Server will serve all the REST calls of the clients so it's the first thing that has to be started. In order to do so you need:
-
-1. Check the IP set at the end of the `Server.py` file. You should see something like:
+1. The Application Server will serve all the REST calls of the clients so it's the first thing that has to be started. In order to do open the `Server.py` file and jump to lat lines of the code. You should see something like:
 ```python
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port='5000', debug=True)
@@ -43,8 +42,31 @@ Edit this properties as you please. The parameters name are pretty self-explanat
 - fill the `host` with the IP machine that will run your server (note: if you are running the app just on your machine, you can simply leave the localhost).
 - Flask typically runs on `port` 5000, but you can change this if you need it.
 - `debug` is set to true so you can know what's going on.
-2. Now simply go to the project folder run the following line on the shell and you should be good to go:
+3. Now simply go to the project folder run the following line on the shell and you should be good to go:
 ```console
 foo@bar:~$ python3 Server.py
 ```
 After a few seconds, your Application Server should be running.
+###Start KafkaTwitter
+Finally, run the `KafkaTwitter.py` script and enjoy this very basic streaming message application.
+
+### 2. Distributed setup
+The above procedure will work if you are planning to run the application on your machine. Connecting multiple machines will require a few additional steps:
+1. First, since you need to connect multiple machines in a network, you'll need:
+- to create a LAN
+- to setup your static IP
+There are quite a lot tutorials to do this, I will not cover this but from now on I'll assume that your machines have a unique static IP and are connected through a LAN.
+
+2. `Apache Kafka`: to setup a Kafka cluster between several machines simply follow the instructions to setup [Confluent Kafka](https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart) on a single machine. In addition, go to the `<PATH-TO-CONFLUENT>/etc/kafka/` directory, you should see a `server.properties` file, you need to open it and edit a couple of things:
+```console
+foo@bar:~$ nano server.properties
+```
+There are quite a lot properties to play with, but for now we are interested only in 3:
+
+- `broker.id=<YOUR_ID>` this parameter is required as a unique broker identifier for each machine running in the Kafka Cluster. There are no restrictions, you can choose whatever number you like as long as the brokers' IDs are all distinct.
+- `listeners=PLAINTEXT://<YOUR_IP>:<YOUR_PORT>` this is pretty explicative, just put in your static IP and your favorite port. By default, if you haven't change it, Kafka brokers will run on port 9092.
+- `zookeeper.connect=<MACHINE_RUNNING_ZK_IP>:<ZK_PORT>` fill the IP and port with the ones of the machine/machines running Zookeeper (the port is typically set on 2181). Note that if you plan to create a cluster with 3 machines, you'll need to create 3 instances of Kafka, one for each broker, but only one instance of Zookeeper. In general, the number of Zookeeper instances is an odd number, which allows Zookeeper to perform majority elections algorithms in order to elect the leader. In general, for small clusters 1 Zookeeper instance will be sufficient. Run the Zookeeper instance followed by the Kafka instances and your cluster should be good.
+
+3. For what concerns the Application Server, edit the previous `host` and `port` properties with the ones of the machine that will run the `Server.py` script and then start the server on that machine.
+
+4. Now you can run the `KafkaTwitter.py` script on each PC and start sharing messages  with your friends.
