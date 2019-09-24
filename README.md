@@ -1,5 +1,5 @@
 <p align="center">
-<img height=180px src="https://github.com/tmscarla/kafka-twitter/blob/master/logo.jpg?raw=true"/>
+<img height=180px src="https://github.com/tmscarla/kafka-twitter/blob/master/img/logo.jpg?raw=true"/>
 </p>
 
 # Kafka Twitter
@@ -76,6 +76,9 @@ There are quite a lot properties to play with, but for now we are interested onl
 ## Preview
 Here you can see some screenshots of the client side application made with Tkinter:
 
+<p align="center">
+<img height=350px src="https://github.com/tmscarla/kafka-twitter/blob/master/img/screenshots.png?raw=true"/>
+</p>
 
 
 ## License
