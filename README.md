@@ -4,9 +4,7 @@
 
 # Kafka Twitter
 
-<img src="https://img.shields.io/github/license/teomores/kafka-twitter"/> <img src="https://img.shields.io/github/issues/teomores/kafka-twitter"/>
-
-Repository for the mandatory project for the 2019 **Middleware Technologies** class.
+<img src="https://img.shields.io/github/license/tmscarla/kafka-twitter"/>
 
 The purpose of  this project is to implement a simplified version of the Twitter social network using **Apache Kafka** to store tweets. Users interact with Twitter using a client that presents a timeline of tweets and allows users to publish new tweets.
 
@@ -27,8 +25,8 @@ In this paragraph, we'll see all the steps needed to get the project up and runn
 1. [Python 3.7.4](https://www.python.org/downloads/release/python-374/)
 2. [Java 8](https://www.java.com/it/download/)
 
-### Installing
-#### 1. Local Setup
+## Installing
+### 1. Local Setup
 This is the basic setup if you want to run the application on a single machine. In this case your machine will host the client, the AppServer and both Kafka and Zookeeper. If you want to run the application in a distributed scenario, jump to the [*this section*](####2.-distributed-setup).
 
 1. First of all, you need **Apache Kafka**. In order to do so, just follow the simple instructions provided on the [Confluent Platform Quick Start](https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart) page. In a few minutes you should be able download and setup all you need; at that point just open your favorite terminal and run:
@@ -54,7 +52,7 @@ After a few seconds, your Application Server should be running.
 
 Finally, run the `KafkaTwitter.py` script and enjoy this very basic streaming message application.
 
-#### 2. Distributed Setup
+### 2. Distributed Setup
 The above procedure will work if you are planning to run the application on your machine. Connecting multiple machines will require a few additional steps:
 1. First, since you need to connect the machines in a network, you'll need:
 - to create a **LAN**
