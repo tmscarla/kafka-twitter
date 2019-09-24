@@ -35,23 +35,26 @@ class Tweet2Vec(object):
 
 
 if __name__ == '__main__':
-    # Example documents
-    docs = ["I love machine learning. Its awesome.",
-            "I love coding in python",
-            "I love building chatbots",
-            "they chat amagingly well"]
-
     # Load tweets
-    df = pd.read_csv('data/twitter_dataset.csv', lineterminator='\n')
-    tweets = df['text'].tolist()[:100]
+    df = pd.read_csv('data/tweets_topics.csv', lineterminator='\n')
+    tweets = df['tweet'].tolist()
+    tweets = [str(t) for t in tweets]
+
+    # Parameters
+    n_points = 50
+    epochs = 150
 
     # Train model
-    t2v = Tweet2Vec(20, 100)
+    t2v = Tweet2Vec(n_points, epochs)
     t2v.train_model(tweets)
 
-    # Get all vectors
+    # Get all vectors and store them in a pandas dataframe
     vectors = [list(t2v.model.docvecs[str(i)]) for i, d in enumerate(tweets)]
-    print(vectors)
+    df = pd.DataFrame(vectors)
+    df.to_csv('data/tweets_points_{}.csv'.format(n_points), index=False)
+    print(df)
+
+    exit()
 
     # Find vector of a document in the training data
     v = t2v.model.docvecs['0']
